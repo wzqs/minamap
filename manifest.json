@@ -1,0 +1,37 @@
+{
+    "manifest_version": 3,
+    "name": "MinaMap",
+    "version": "1.0",
+    "description": "A Chrome extension for $MINA transaction flow visualization.",
+    "icons": {
+      "16": "img/logo-16.png",
+      "48": "img/logo-16.png",
+      "128": "img/logo-16.png"
+    },
+    "permissions": [
+      "storage",
+      "activeTab"
+    ],
+    "content_scripts": [
+      {
+        "matches": [
+          "https://*.minascan.io/*",
+          "https://*.minaexplorer.com/*"
+        ],
+        "js": ["scripts/load.js"],
+        "run_at": "document_end"
+      }
+    ],
+    "host_permissions": [
+      "https://*.minascan.io/*",
+      "https://*.minaexplorer.com/*"
+    ],
+    "action": {
+      "default_popup": "options/options.html",
+      "default_title": "MinaMap"
+    },
+    "options_ui": {
+      "page": "options/options.html",
+      "open_in_tab": false
+    }
+  }
