@@ -189,10 +189,10 @@ body {
     display: flex;
     align-items: center;
     padding: 10px 0;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .supported-websites-list li img {
-    width: 24px;
+    width: 20px;
     margin-right: 10px;
 }
