@@ -1,21 +1,27 @@
 document.getElementById('supportedWebsites').addEventListener('click', function () {
-    document.getElementById('overlay').style.display = 'flex';
+    // document.getElementById('overlay').style.display = 'flex';
+    let dom = document.getElementById('overlay');
+    dom.classList.add('show');
 });
 
 document.getElementById('closeOverlay').addEventListener('click', function () {
-    document.getElementById('overlay').style.display = 'none';
+    let dom = document.getElementById('overlay');
+    dom.classList.remove('show');
 });
 
-document.querySelector('.search').addEventListener('keydown', function(event) {
-    const query = this.value.trim();
-    const dropdown = document.getElementById('dropdown');
 
+// input 搜索
+const searchInput = document.querySelector('.search');
+const dropdown = document.getElementById('dropdown');
+
+searchInput.addEventListener('keydown', function(event) {
+    const query = this.value.trim();
     // Validate: contains only letters and numbers and is exactly 55 characters long
     const isValid = /^[a-zA-Z0-9]{55}$/.test(query);
     
     if (event.key === 'Enter') {
-        dropdown.innerHTML = '';
-
+        dropdown.innerHTML = ''; // 清空下拉列表
+        console.log(isValid);
         if (isValid) {
             const supportedWebsites = [
                 { name: 'minaexplorer.com', url: `https://minaexplorer.com/wallet/${query}` },
@@ -34,19 +40,24 @@ document.querySelector('.search').addEventListener('keydown', function(event) {
                 dropdown.appendChild(item);
             });
 
-            dropdown.style.display = 'block';
+            // 显示下拉列表
+            dropdown.classList.add('show');
         } else {
-            dropdown.style.display = 'none';
+            dropdown.classList.remove('show'); // 如果没有输入，隐藏下拉列表
         }
     }
 });
 
+// 监听失去焦点事件
+searchInput.addEventListener('blur', function() {
+    setTimeout(() => {
+        dropdown.classList.remove('show'); // 失去焦点时隐藏下拉列表
+    }, 100); // 设置延迟，以便用户可以点击下拉项
+});
 
+// 点击事件处理
 document.addEventListener('click', function(event) {
-    const dropdown = document.getElementById('dropdown');
-    const searchInput = document.querySelector('.search');
-
     if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.style.display = 'none';
+        dropdown.classList.remove('show');
     }
 });
