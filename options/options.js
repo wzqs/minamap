@@ -9,11 +9,14 @@ document.getElementById('closeOverlay').addEventListener('click', function () {
 document.querySelector('.search').addEventListener('keydown', function(event) {
     const query = this.value.trim();
     const dropdown = document.getElementById('dropdown');
+
+    // Validate: contains only letters and numbers and is exactly 55 characters long
+    const isValid = /^[a-zA-Z0-9]{55}$/.test(query);
     
     if (event.key === 'Enter') {
         dropdown.innerHTML = '';
 
-        if (query) {
+        if (isValid) {
             const supportedWebsites = [
                 { name: 'minaexplorer.com', url: `https://minaexplorer.com/wallet/${query}` },
                 { name: 'minascan.io', url: `https://minascan.io/mainnet/account/${query}` }
