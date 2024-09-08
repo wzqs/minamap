@@ -10,7 +10,8 @@
     },
     "permissions": [
       "storage",
-      "activeTab"
+      "activeTab",
+      "webRequest"
     ],
     "content_scripts": [
       {
