@@ -10,10 +10,10 @@ window.onload = function () {
             accountOverviewElement.appendChild(button);
 
             // 为按钮添加点击事件监听
-            button.addEventListener('click', function () {
+            button.addEventListener('click', async function () {
                 const accountUrl = window.location.href;
                 console.log('当前URL:', accountUrl);
-                const allData = fetchTransactionData(accountUrl);
+                const allData = await fetchTransactionData(accountUrl);
                 console.log(allData);
 
                 // 生成并显示流向图
@@ -129,15 +129,15 @@ function processTransactionData(data) {
     });
 
     // 打印汇总结果：格式化金额并打印去重后的地址、用户名及 memo
-    console.log('转入地址、金额和 memo:');
-    flowData.incoming.forEach((value, address) => {
-        console.log(`地址: ${address}, 用户名: ${value.userName}, 金额: ${formatAmount(value.amount)}, memo: ${value.memo}`);
-    });
+    // console.log('转入地址、金额和 memo:');
+    // flowData.incoming.forEach((value, address) => {
+    //     console.log(`地址: ${address}, 用户名: ${value.userName}, 金额: ${formatAmount(value.amount)}, memo: ${value.memo}`);
+    // });
 
-    console.log('转出地址、金额和 memo:');
-    flowData.outgoing.forEach((value, address) => {
-        console.log(`地址: ${address}, 用户名: ${value.userName}, 金额: ${formatAmount(value.amount)}, memo: ${value.memo}`);
-    });
+    // console.log('转出地址、金额和 memo:');
+    // flowData.outgoing.forEach((value, address) => {
+    //     console.log(`地址: ${address}, 用户名: ${value.userName}, 金额: ${formatAmount(value.amount)}, memo: ${value.memo}`);
+    // });
 
     return flowData;
 }
@@ -158,9 +158,9 @@ function generateFlowChart(flowData) {
     chartContainer.appendChild(closeButton);
 
     // 准备图表数据
-    const nodes = [{ id: "当前账户", group: 1 }];
+    const nodes = [{ id: "My Account", group: 1 }];
     const links = [];
-    const addedNodes = new Set(["当前账户"]);
+    const addedNodes = new Set(["My Account"]);
 
     console.log("原始 flowData:", flowData);
 
@@ -173,8 +173,10 @@ function generateFlowChart(flowData) {
                 }
                 links.push({
                     source: address,
-                    target: "当前账户",
+                    target: "My Account",
                     value: value.amount,
+                    userName: value.userName,
+                    memo: value.memo,
                     date: "N/A",
                     type: "incoming"
                 });
@@ -188,9 +190,11 @@ function generateFlowChart(flowData) {
                     addedNodes.add(address);
                 }
                 links.push({
-                    source: "当前账户",
+                    source: "My Account",
                     target: address,
                     value: value.amount,
+                    userName: value.userName,
+                    memo: value.memo,
                     date: "N/A",
                     type: "outgoing"
                 });
@@ -204,7 +208,7 @@ function generateFlowChart(flowData) {
     // 如果没有数据,显示提示信息
     if (nodes.length === 1 && links.length === 0) {
         const noDataMessage = document.createElement('p');
-        noDataMessage.textContent = '没有可用的交易数据';
+        noDataMessage.textContent = 'No available transaction data';
         chartContainer.appendChild(noDataMessage);
         return;
     }

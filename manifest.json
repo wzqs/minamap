@@ -19,8 +19,14 @@
           "https://*.minascan.io/*",
           "https://*.minaexplorer.com/*"
         ],
-        "js": ["scripts/load.js"],
+        "js": ["scripts/d3.v7.min.js","scripts/load.js"],
         "run_at": "document_end"
+      }
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": ["scripts/d3.v7.min.js"],
+        "matches": ["https://*.minaexplorer.com/*"]
       }
     ],
     "host_permissions": [
