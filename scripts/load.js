@@ -12,9 +12,7 @@ window.onload = function () {
             // 为按钮添加点击事件监听
             button.addEventListener('click', async function () {
                 const accountUrl = window.location.href;
-                console.log('当前URL:', accountUrl);
                 const allData = await fetchTransactionData(accountUrl);
-                console.log(allData);
 
                 // 生成并显示流向图
                 generateFlowChart(allData);
@@ -46,7 +44,6 @@ async function fetchTransactionData(accountUrl) {
     let apiUrl;
     if (accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
         apiUrl = `https://minaexplorer.com/all-transactions/${getAccountId(accountUrl)}`;
-        console.log(apiUrl);
 
         // 第一次请求，获取交易记录数量
         const fetchTxNums = `${apiUrl}?length=1`;
@@ -55,7 +52,6 @@ async function fetchTransactionData(accountUrl) {
 
         // 从第一次请求的响应中提取交易记录数量
         const txNums = jsonData.recordsTotal;
-        console.log('交易记录数量:', txNums);
 
         // 第二次请求，根据交易记录数量获取所有记录
         const fetchAllTx = `${apiUrl}?length=${txNums}`;
@@ -202,7 +198,6 @@ function generateFlowChart(flowData) {
         }
     }
 
-    console.log("处理后的 Nodes:", nodes);
     console.log("处理后的 Links:", links);
 
     // 如果没有数据,显示提示信息
@@ -221,19 +216,22 @@ function createChart(container, data) {
     // 设置图表尺寸和边距
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    const radius = Math.min(width, height) / 2 - 100; // 减少100px以留出边距
 
     // 创建SVG元素
     const svg = d3.select(container)
         .append("svg")
         .attr("width", width)
-        .attr("height", height);
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(${width / 2},${height / 2})`);
 
     // 创建力导向模拟
     const simulation = d3.forceSimulation(data.nodes)
-        .force("link", d3.forceLink(data.links).id(d => d.id).distance(100))
-        .force("charge", d3.forceManyBody().strength(-300))
-        .force("center", d3.forceCenter(width / 2, height / 2));
+        .force("link", d3.forceLink(data.links).id(d => d.id).distance(radius / 2))
+        .force("charge", d3.forceManyBody().strength(-1000))
+        .force("center", d3.forceCenter(0, 0))
+        .force("radial", d3.forceRadial(d => d.id === "My Account" ? 0 : radius, 0, 0).strength(1));
 
     // 创建箭头标记
     svg.append("defs").selectAll("marker")
@@ -241,7 +239,7 @@ function createChart(container, data) {
         .enter().append("marker")
         .attr("id", d => `arrow-${d}`)
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 15)
+        .attr("refX", 20)
         .attr("refY", 0)
         .attr("markerWidth", 6)
         .attr("markerHeight", 6)
@@ -252,11 +250,12 @@ function createChart(container, data) {
 
     // 绘制连线
     const link = svg.append("g")
-        .selectAll("line")
+        .selectAll("path")
         .data(data.links)
-        .enter().append("line")
-        .attr("stroke-width", d => Math.sqrt(d.value) / 10)
+        .enter().append("path")
         .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#F44336")
+        .attr("stroke-width", d => Math.log(d.value) / 10)
+        .attr("fill", "none")
         .attr("marker-end", d => `url(#arrow-${d.type})`);
 
     // 绘制节点
@@ -264,8 +263,8 @@ function createChart(container, data) {
         .selectAll("circle")
         .data(data.nodes)
         .enter().append("circle")
-        .attr("r", d => d.id === "当前账户" ? 15 : 10)
-        .attr("fill", d => d.id === "当前账户" ? "#FFC107" : "#2196F3")
+        .attr("r", d => d.id === "My Account" ? 20 : 10)
+        .attr("fill", d => d.id === "My Account" ? "#FFC107" : "#2196F3")
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -278,25 +277,27 @@ function createChart(container, data) {
         .enter().append("text")
         .text(d => d.id)
         .attr("font-size", 12)
-        .attr("dx", 12)
-        .attr("dy", 4);
+        .attr("text-anchor", "middle")
+        .attr("dy", 20);
 
     // 添加交易信息标签
     const transactionInfo = svg.append("g")
         .selectAll("text")
         .data(data.links)
         .enter().append("text")
-        .text(d => `${(d.value / 1e9).toFixed(9)} MINA`)
+        .text(d => `${(d.value / 1e9).toFixed(4)} MINA`)
         .attr("font-size", 10)
-        .attr("fill", "#666");
+        .attr("fill", "#666")
+        .attr("text-anchor", "middle");
 
     // 更新力导向图布局
     simulation.on("tick", () => {
-        link
-            .attr("x1", d => d.source.x)
-            .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
+        link.attr("d", d => {
+            const dx = d.target.x - d.source.x,
+                  dy = d.target.y - d.source.y,
+                  dr = Math.sqrt(dx * dx + dy * dy);
+            return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+        });
 
         node
             .attr("cx", d => d.x)
@@ -312,33 +313,32 @@ function createChart(container, data) {
     });
 
     // 拖拽函数
-    function dragstarted(event) {
+    function dragstarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
+        d.fx = d.x;
+        d.fy = d.y;
     }
 
-    function dragged(event) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
     }
 
-    function dragended(event) {
+    function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
+        d.fx = null;
+        d.fy = null;
     }
 
     // 添加缩放功能
     const zoom = d3.zoom()
         .scaleExtent([0.1, 4])
         .on("zoom", (event) => {
-            svg.selectAll("g").attr("transform", event.transform);
+            svg.attr("transform", event.transform);
         });
 
     svg.call(zoom);
 }
-
 
 
 
