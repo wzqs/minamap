@@ -191,7 +191,7 @@ function generateFlowChart(flowData) {
         if (flowData.outgoing && flowData.outgoing instanceof Map) {
             flowData.outgoing.forEach((value, address) => {
                 if (!addedNodes.has(address)) {
-                    nodes.push({ id: address, group: 2 });
+                    nodes.push({ id: address, group: 3 });
                     addedNodes.add(address);
                 }
                 links.push({
@@ -241,7 +241,7 @@ function createChart(container, data) {
         .enter().append("marker")
         .attr("id", d => `arrow-${d}`)
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 8)
+        .attr("refX", 15)
         .attr("refY", 0)
         .attr("markerWidth", 6)
         .attr("markerHeight", 6)
@@ -250,61 +250,137 @@ function createChart(container, data) {
         .attr("fill", d => d === "incoming" ? "#4CAF50" : "#2196F3")
         .attr("d", "M0,-5L10,0L0,5");
 
-    // 分离入账和出账节点
-    const incomingNodes = data.nodes.filter(n => n.group === 2 && data.links.some(l => l.source === n.id && l.type === "incoming"));
-    const outgoingNodes = data.nodes.filter(n => n.group === 2 && data.links.some(l => l.target === n.id && l.type === "outgoing"));
+    // 分离入账和出账节点，同时处理既有入账又有出账的情况
+    const incomingNodes = new Set(data.links.filter(l => l.type === "incoming").map(l => l.source));
+    const outgoingNodes = new Set(data.links.filter(l => l.type === "outgoing").map(l => l.target));
+    const bothDirectionNodes = new Set([...incomingNodes].filter(x => outgoingNodes.has(x)));
+
     const centerNode = data.nodes.find(n => n.group === 1);
 
+    // // 计算节点位置
+    // const nodeHeight = 30;
+    // const maxNodes = Math.max(incomingNodes.length, outgoingNodes.length);
+    // const yScale = d3.scaleLinear()
+    //     .domain([0, maxNodes - 1])
+    //     .range([nodeHeight, innerHeight - nodeHeight]);
+
+    // incomingNodes.forEach((node, i) => {
+    //     node.x = 0;
+    //     node.y = yScale(i);
+    // });
+
+    // outgoingNodes.forEach((node, i) => {
+    //     node.x = innerWidth;
+    //     node.y = yScale(i);
+    // });
+
+    // centerNode.x = innerWidth / 2;
+    // centerNode.y = innerHeight / 2;
+
+    // // 创建节点 ID 到节点对象的映射
+    // const nodeMap = new Map(data.nodes.map(node => [node.id, node]));
+
+    // // 绘制连线
+    // svg.selectAll(".link")
+    //     .data(data.links)
+    //     .enter().append("line")
+    //     .attr("class", "link")
+    //     .attr("x1", d => d.type === "incoming" ? nodeMap.get(d.source).x : centerNode.x)
+    //     .attr("y1", d => d.type === "incoming" ? nodeMap.get(d.source).y : centerNode.y)
+    //     .attr("x2", d => d.type === "incoming" ? centerNode.x : nodeMap.get(d.target).x)
+    //     .attr("y2", d => d.type === "incoming" ? centerNode.y : nodeMap.get(d.target).y)
+    //     .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#2196F3")
+    //     .attr("stroke-width", 2)
+    //     .attr("marker-end", d => `url(#arrow-${d.type})`);
+
+    // // 绘制节点
+    // const node = svg.selectAll(".node")
+    //     .data(data.nodes)
+    //     .enter().append("g")
+    //     .attr("class", "node")
+    //     .attr("transform", d => `translate(${d.x},${d.y})`);
+
+    // node.append("circle")
+    //     .attr("r", d => d.group === 1 ? 20 : 6)
+    //     .attr("fill", d => d.group === 1 ? "#FFC107" : (d.group === 2 ? "#4CAF50" : "#2196F3"));
+
+    // // 添加地址标签
+    // node.append("text")
+    //     .attr("dy", d => d.group === 1 ? 35 : 3)
+    //     .attr("dx", d => d.group === 1 ? 0 : (d.group === 2 ? 15 : -15))
+    //     .attr("text-anchor", d => d.group === 1 ? "middle" : (d.group === 2 ? "start" : "end"))
+    //     .text(d => d.id.substring(0, 10) + "...")
+    //     .attr("font-size", 12)
+    //     .attr("fill", "#333");
+
+    // // 添加交易信息标签
+    // svg.selectAll(".transaction-info")
+    //     .data(data.links)
+    //     .enter().append("text")
+    //     .attr("class", "transaction-info")
+    //     .attr("x", d => d.type === "incoming" ? (nodeMap.get(d.source).x + centerNode.x) / 2 : (centerNode.x + nodeMap.get(d.target).x) / 2)
+    //     .attr("y", d => d.type === "incoming" ? (nodeMap.get(d.source).y + centerNode.y) / 2 : (centerNode.y + nodeMap.get(d.target).y) / 2)
+    //     .attr("text-anchor", "middle")
+    //     .attr("dy", -10)
+    //     .text(d => `${(d.value / 1e9).toFixed(4)} MINA`)
+    //     .attr("font-size", 10)
+    //     .attr("fill", "#666");
+
     // 计算节点位置
-    const nodeHeight = 40;
-    const maxNodes = Math.max(incomingNodes.length, outgoingNodes.length);
+    const nodeHeight = 30;
+    const maxNodes = Math.max(incomingNodes.size, outgoingNodes.size);
     const yScale = d3.scaleLinear()
         .domain([0, maxNodes - 1])
-        .range([0, innerHeight - nodeHeight]);
+        .range([nodeHeight, innerHeight - nodeHeight]);
 
-    incomingNodes.forEach((node, i) => {
-        node.x = 0;
-        node.y = yScale(i) + nodeHeight / 2;
+    // 创建节点 ID 到节点对象的映射
+    const nodeMap = new Map();
+
+    // 处理入账节点
+    [...incomingNodes].forEach((id, i) => {
+        nodeMap.set(id + "_in", {id: id, x: 0, y: yScale(i), group: 2});
     });
 
-    outgoingNodes.forEach((node, i) => {
-        node.x = innerWidth;
-        node.y = yScale(i) + nodeHeight / 2;
+    // 处理出账节点
+    [...outgoingNodes].forEach((id, i) => {
+        nodeMap.set(id + "_out", {id: id, x: innerWidth, y: yScale(i), group: 3});
     });
 
+    // 设置中心节点
     centerNode.x = innerWidth / 2;
     centerNode.y = innerHeight / 2;
+    nodeMap.set(centerNode.id, centerNode);
 
     // 绘制连线
     svg.selectAll(".link")
         .data(data.links)
         .enter().append("line")
         .attr("class", "link")
-        .attr("x1", d => d.type === "incoming" ? 10 : innerWidth / 2 + 10)
-        .attr("y1", d => d.type === "incoming" ? incomingNodes.find(n => n.id === d.source).y : centerNode.y)
-        .attr("x2", d => d.type === "incoming" ? innerWidth / 2 - 10 : innerWidth - 10)
-        .attr("y2", d => d.type === "incoming" ? centerNode.y : outgoingNodes.find(n => n.id === d.target).y)
+        .attr("x1", d => d.type === "incoming" ? nodeMap.get(d.source + "_in").x : centerNode.x)
+        .attr("y1", d => d.type === "incoming" ? nodeMap.get(d.source + "_in").y : centerNode.y)
+        .attr("x2", d => d.type === "incoming" ? centerNode.x : nodeMap.get(d.target + "_out").x)
+        .attr("y2", d => d.type === "incoming" ? centerNode.y : nodeMap.get(d.target + "_out").y)
         .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#2196F3")
         .attr("stroke-width", 2)
         .attr("marker-end", d => `url(#arrow-${d.type})`);
 
     // 绘制节点
     const node = svg.selectAll(".node")
-        .data(data.nodes)
+        .data([...nodeMap.values()])
         .enter().append("g")
         .attr("class", "node")
         .attr("transform", d => `translate(${d.x},${d.y})`);
 
     node.append("circle")
         .attr("r", d => d.group === 1 ? 20 : 6)
-        .attr("fill", d => d.group === 1 ? "#FFC107" : (d.x === 0 ? "#4CAF50" : "#2196F3"));
+        .attr("fill", d => d.group === 1 ? "#FFC107" : (d.group === 2 ? "#4CAF50" : "#2196F3"));
 
     // 添加地址标签
     node.append("text")
-        .attr("dy", d => d.group === 1 ? 35 : 0)
-        .attr("dx", d => d.group === 1 ? 0 : (d.x === 0 ? 15 : -15))
-        .attr("text-anchor", d => d.group === 1 ? "middle" : (d.x === 0 ? "start" : "end"))
-        .text(d => d.id.substring(0, 15) + "...")
+        .attr("dy", d => d.group === 1 ? 35 : 3)
+        .attr("dx", d => d.group === 1 ? 0 : (d.group === 2 ? 15 : -15))
+        .attr("text-anchor", d => d.group === 1 ? "middle" : (d.group === 2 ? "start" : "end"))
+        .text(d => d.id.substring(0, 10) + "...")
         .attr("font-size", 12)
         .attr("fill", "#333");
 
@@ -313,10 +389,14 @@ function createChart(container, data) {
         .data(data.links)
         .enter().append("text")
         .attr("class", "transaction-info")
-        .attr("x", d => d.type === "incoming" ? innerWidth / 4 : 3 * innerWidth / 4)
+        .attr("x", d => {
+            const sourceX = d.type === "incoming" ? nodeMap.get(d.source + "_in").x : centerNode.x;
+            const targetX = d.type === "incoming" ? centerNode.x : nodeMap.get(d.target + "_out").x;
+            return (sourceX + targetX) / 2;
+        })
         .attr("y", d => {
-            const sourceY = d.type === "incoming" ? incomingNodes.find(n => n.id === d.source).y : centerNode.y;
-            const targetY = d.type === "incoming" ? centerNode.y : outgoingNodes.find(n => n.id === d.target).y;
+            const sourceY = d.type === "incoming" ? nodeMap.get(d.source + "_in").y : centerNode.y;
+            const targetY = d.type === "incoming" ? centerNode.y : nodeMap.get(d.target + "_out").y;
             return (sourceY + targetY) / 2;
         })
         .attr("text-anchor", "middle")
@@ -324,22 +404,6 @@ function createChart(container, data) {
         .text(d => `${(d.value / 1e9).toFixed(4)} MINA`)
         .attr("font-size", 10)
         .attr("fill", "#666");
-
-    svg.selectAll(".transaction-date")
-        .data(data.links)
-        .enter().append("text")
-        .attr("class", "transaction-date")
-        .attr("x", d => d.type === "incoming" ? innerWidth / 4 : 3 * innerWidth / 4)
-        .attr("y", d => {
-            const sourceY = d.type === "incoming" ? incomingNodes.find(n => n.id === d.source).y : centerNode.y;
-            const targetY = d.type === "incoming" ? centerNode.y : outgoingNodes.find(n => n.id === d.target).y;
-            return (sourceY + targetY) / 2;
-        })
-        .attr("text-anchor", "middle")
-        .attr("dy", 10)
-        .text(d => d.date)
-        .attr("font-size", 10)
-        .attr("fill", "#999");
 
     // 添加缩放功能
     const zoom = d3.zoom()
