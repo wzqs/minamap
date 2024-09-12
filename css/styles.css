@@ -1,0 +1,52 @@
+/* styles.css */
+.account-overview-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fund-flow-button {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.fund-flow-button:hover {
+    background-color: #45a049;
+}
+
+#flow-chart-container {
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    height: 80%;
+    background: white;
+    border: 1px solid #ccc;
+    z-index: 1000;
+    overflow: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+    padding: 5px 10px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.close-button:hover {
+    background-color: #d32f2f;
+}

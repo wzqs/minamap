@@ -20,6 +20,7 @@
           "https://*.minaexplorer.com/*"
         ],
         "js": ["scripts/d3.v7.min.js","scripts/load.js"],
+        "css": ["css/styles.css"],
         "run_at": "document_end"
       }
     ],

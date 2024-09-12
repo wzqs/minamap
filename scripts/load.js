@@ -5,9 +5,17 @@ window.onload = function () {
         // 查找 'Account Overview' 的元素位置
         const accountOverviewElement = document.querySelector('h5.card-title');
         if (accountOverviewElement) {
+            // 创建一个容器来包裹标题和按钮
+            const container = document.createElement('div');
+            container.classList.add('account-overview-container');
+            
+            // 将原有的标题移动到新容器中
+            accountOverviewElement.parentNode.insertBefore(container, accountOverviewElement);
+            container.appendChild(accountOverviewElement);
+            
             // 创建并插入按钮
             const button = createButton();
-            accountOverviewElement.appendChild(button);
+            container.appendChild(button);
 
             // 为按钮添加点击事件监听
             button.addEventListener('click', async function () {
@@ -33,8 +41,8 @@ function isSupportedSite(url) {
 // 创建按钮元素
 function createButton() {
     const button = document.createElement('button');
-    button.innerText = 'fund flow';
-    button.style.marginLeft = '3px'; // 可以调整样式
+    button.innerText = 'Fund Flow';
+    button.classList.add('fund-flow-button');
     return button;
 }
 
@@ -154,9 +162,10 @@ function generateFlowChart(flowData) {
     chartContainer.appendChild(closeButton);
 
     // 准备图表数据
-    const nodes = [{ id: "My Account", group: 1 }];
+    const accountId = getAccountId(window.location.href);
+    const nodes = [{ id: accountId, group: 1 }];
     const links = [];
-    const addedNodes = new Set(["My Account"]);
+    const addedNodes = new Set([accountId]);
 
     console.log("原始 flowData:", flowData);
 
@@ -169,7 +178,7 @@ function generateFlowChart(flowData) {
                 }
                 links.push({
                     source: address,
-                    target: "My Account",
+                    target: accountId,
                     value: value.amount,
                     userName: value.userName,
                     memo: value.memo,
@@ -186,7 +195,7 @@ function generateFlowChart(flowData) {
                     addedNodes.add(address);
                 }
                 links.push({
-                    source: "My Account",
+                    source: accountId,
                     target: address,
                     value: value.amount,
                     userName: value.userName,
@@ -231,7 +240,7 @@ function createChart(container, data) {
         .force("link", d3.forceLink(data.links).id(d => d.id).distance(radius / 2))
         .force("charge", d3.forceManyBody().strength(-1000))
         .force("center", d3.forceCenter(0, 0))
-        .force("radial", d3.forceRadial(d => d.id === "My Account" ? 0 : radius, 0, 0).strength(1));
+        .force("radial", d3.forceRadial(d => d.group === 1 ? 0 : radius, 0, 0).strength(1));
 
     // 创建箭头标记
     svg.append("defs").selectAll("marker")
@@ -263,8 +272,8 @@ function createChart(container, data) {
         .selectAll("circle")
         .data(data.nodes)
         .enter().append("circle")
-        .attr("r", d => d.id === "My Account" ? 20 : 10)
-        .attr("fill", d => d.id === "My Account" ? "#FFC107" : "#2196F3")
+        .attr("r", d => d.group === 1 ? 20 : 10)
+        .attr("fill", d => d.group === 1 ? "#FFC107" : "#2196F3")
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
