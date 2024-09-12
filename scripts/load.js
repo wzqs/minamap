@@ -156,7 +156,7 @@ function generateFlowChart(flowData) {
 
     // 创建关闭按钮
     const closeButton = document.createElement('button');
-    closeButton.innerText = '关闭';
+    closeButton.innerText = 'Close';
     closeButton.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 1001;';
     closeButton.onclick = () => document.body.removeChild(chartContainer);
     chartContainer.appendChild(closeButton);
@@ -222,122 +222,124 @@ function generateFlowChart(flowData) {
 }
 
 function createChart(container, data) {
-    // 设置图表尺寸和边距
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const radius = Math.min(width, height) / 2 - 100; // 减少100px以留出边距
+    const margin = {top: 50, right: 220, bottom: 50, left: 220};
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
 
-    // 创建SVG元素
     const svg = d3.select(container)
         .append("svg")
         .attr("width", width)
         .attr("height", height)
         .append("g")
-        .attr("transform", `translate(${width / 2},${height / 2})`);
+        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // 创建力导向模拟
-    const simulation = d3.forceSimulation(data.nodes)
-        .force("link", d3.forceLink(data.links).id(d => d.id).distance(radius / 2))
-        .force("charge", d3.forceManyBody().strength(-1000))
-        .force("center", d3.forceCenter(0, 0))
-        .force("radial", d3.forceRadial(d => d.group === 1 ? 0 : radius, 0, 0).strength(1));
-
-    // 创建箭头标记
+    // 定义箭头
     svg.append("defs").selectAll("marker")
         .data(["incoming", "outgoing"])
         .enter().append("marker")
         .attr("id", d => `arrow-${d}`)
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 20)
+        .attr("refX", 8)
         .attr("refY", 0)
         .attr("markerWidth", 6)
         .attr("markerHeight", 6)
         .attr("orient", "auto")
         .append("path")
-        .attr("fill", d => d === "incoming" ? "#4CAF50" : "#F44336")
+        .attr("fill", d => d === "incoming" ? "#4CAF50" : "#2196F3")
         .attr("d", "M0,-5L10,0L0,5");
 
+    // 分离入账和出账节点
+    const incomingNodes = data.nodes.filter(n => n.group === 2 && data.links.some(l => l.source === n.id && l.type === "incoming"));
+    const outgoingNodes = data.nodes.filter(n => n.group === 2 && data.links.some(l => l.target === n.id && l.type === "outgoing"));
+    const centerNode = data.nodes.find(n => n.group === 1);
+
+    // 计算节点位置
+    const nodeHeight = 40;
+    const maxNodes = Math.max(incomingNodes.length, outgoingNodes.length);
+    const yScale = d3.scaleLinear()
+        .domain([0, maxNodes - 1])
+        .range([0, innerHeight - nodeHeight]);
+
+    incomingNodes.forEach((node, i) => {
+        node.x = 0;
+        node.y = yScale(i) + nodeHeight / 2;
+    });
+
+    outgoingNodes.forEach((node, i) => {
+        node.x = innerWidth;
+        node.y = yScale(i) + nodeHeight / 2;
+    });
+
+    centerNode.x = innerWidth / 2;
+    centerNode.y = innerHeight / 2;
+
     // 绘制连线
-    const link = svg.append("g")
-        .selectAll("path")
+    svg.selectAll(".link")
         .data(data.links)
-        .enter().append("path")
-        .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#F44336")
-        .attr("stroke-width", d => Math.log(d.value) / 10)
-        .attr("fill", "none")
+        .enter().append("line")
+        .attr("class", "link")
+        .attr("x1", d => d.type === "incoming" ? 10 : innerWidth / 2 + 10)
+        .attr("y1", d => d.type === "incoming" ? incomingNodes.find(n => n.id === d.source).y : centerNode.y)
+        .attr("x2", d => d.type === "incoming" ? innerWidth / 2 - 10 : innerWidth - 10)
+        .attr("y2", d => d.type === "incoming" ? centerNode.y : outgoingNodes.find(n => n.id === d.target).y)
+        .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#2196F3")
+        .attr("stroke-width", 2)
         .attr("marker-end", d => `url(#arrow-${d.type})`);
 
     // 绘制节点
-    const node = svg.append("g")
-        .selectAll("circle")
+    const node = svg.selectAll(".node")
         .data(data.nodes)
-        .enter().append("circle")
-        .attr("r", d => d.group === 1 ? 20 : 10)
-        .attr("fill", d => d.group === 1 ? "#FFC107" : "#2196F3")
-        .call(d3.drag()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended));
+        .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.x},${d.y})`);
 
-    // 添加节点标签
-    const label = svg.append("g")
-        .selectAll("text")
-        .data(data.nodes)
-        .enter().append("text")
-        .text(d => d.id)
+    node.append("circle")
+        .attr("r", d => d.group === 1 ? 20 : 6)
+        .attr("fill", d => d.group === 1 ? "#FFC107" : (d.x === 0 ? "#4CAF50" : "#2196F3"));
+
+    // 添加地址标签
+    node.append("text")
+        .attr("dy", d => d.group === 1 ? 35 : 0)
+        .attr("dx", d => d.group === 1 ? 0 : (d.x === 0 ? 15 : -15))
+        .attr("text-anchor", d => d.group === 1 ? "middle" : (d.x === 0 ? "start" : "end"))
+        .text(d => d.id.substring(0, 15) + "...")
         .attr("font-size", 12)
-        .attr("text-anchor", "middle")
-        .attr("dy", 20);
+        .attr("fill", "#333");
 
     // 添加交易信息标签
-    const transactionInfo = svg.append("g")
-        .selectAll("text")
+    svg.selectAll(".transaction-info")
         .data(data.links)
         .enter().append("text")
+        .attr("class", "transaction-info")
+        .attr("x", d => d.type === "incoming" ? innerWidth / 4 : 3 * innerWidth / 4)
+        .attr("y", d => {
+            const sourceY = d.type === "incoming" ? incomingNodes.find(n => n.id === d.source).y : centerNode.y;
+            const targetY = d.type === "incoming" ? centerNode.y : outgoingNodes.find(n => n.id === d.target).y;
+            return (sourceY + targetY) / 2;
+        })
+        .attr("text-anchor", "middle")
+        .attr("dy", -10)
         .text(d => `${(d.value / 1e9).toFixed(4)} MINA`)
         .attr("font-size", 10)
-        .attr("fill", "#666")
-        .attr("text-anchor", "middle");
+        .attr("fill", "#666");
 
-    // 更新力导向图布局
-    simulation.on("tick", () => {
-        link.attr("d", d => {
-            const dx = d.target.x - d.source.x,
-                  dy = d.target.y - d.source.y,
-                  dr = Math.sqrt(dx * dx + dy * dy);
-            return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
-        });
-
-        node
-            .attr("cx", d => d.x)
-            .attr("cy", d => d.y);
-
-        label
-            .attr("x", d => d.x)
-            .attr("y", d => d.y);
-
-        transactionInfo
-            .attr("x", d => (d.source.x + d.target.x) / 2)
-            .attr("y", d => (d.source.y + d.target.y) / 2);
-    });
-
-    // 拖拽函数
-    function dragstarted(event, d) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-    }
-
-    function dragged(event, d) {
-        d.fx = event.x;
-        d.fy = event.y;
-    }
-
-    function dragended(event, d) {
-        if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
-    }
+    svg.selectAll(".transaction-date")
+        .data(data.links)
+        .enter().append("text")
+        .attr("class", "transaction-date")
+        .attr("x", d => d.type === "incoming" ? innerWidth / 4 : 3 * innerWidth / 4)
+        .attr("y", d => {
+            const sourceY = d.type === "incoming" ? incomingNodes.find(n => n.id === d.source).y : centerNode.y;
+            const targetY = d.type === "incoming" ? centerNode.y : outgoingNodes.find(n => n.id === d.target).y;
+            return (sourceY + targetY) / 2;
+        })
+        .attr("text-anchor", "middle")
+        .attr("dy", 10)
+        .text(d => d.date)
+        .attr("font-size", 10)
+        .attr("fill", "#999");
 
     // 添加缩放功能
     const zoom = d3.zoom()
@@ -346,7 +348,7 @@ function createChart(container, data) {
             svg.attr("transform", event.transform);
         });
 
-    svg.call(zoom);
+    d3.select(container).select("svg").call(zoom);
 }
 
 
