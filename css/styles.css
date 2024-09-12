@@ -6,16 +6,19 @@
 }
 
 .fund-flow-button {
-    margin-left: 10px;
+    /* margin-left: 10px;
     padding: 5px 10px;
     background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 12px; */
+    border: none;
 }
-
+.layui-layer-loading-2::after {
+    border-color: #4caf50 !important; /* 设置加载动画颜色 */
+}
 .fund-flow-button:hover {
     background-color: #45a049;
 }

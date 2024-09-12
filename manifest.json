@@ -19,14 +19,24 @@
           "https://*.minascan.io/*",
           "https://*.minaexplorer.com/*"
         ],
-        "js": ["scripts/d3.v7.min.js","scripts/load.js"],
-        "css": ["css/styles.css"],
+        "js": [
+          "scripts/d3.v7.min.js",
+          "scripts/load.js",
+          "scripts/jquery-3.5.1.min.js",
+          "scripts/layui.js"
+        ],
+        "css": [
+          "css/styles.css",
+          "css/layui.css"
+        ],
         "run_at": "document_end"
       }
     ],
     "web_accessible_resources": [
       {
-        "resources": ["scripts/d3.v7.min.js"],
+        "resources": [
+          "scripts/d3.v7.min.js"
+        ],
         "matches": ["https://*.minaexplorer.com/*"]
       }
     ],

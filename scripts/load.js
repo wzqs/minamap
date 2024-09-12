@@ -19,12 +19,34 @@ window.onload = function () {
 
             // 为按钮添加点击事件监听
             button.addEventListener('click', async function () {
+                var loadingIndex = layer.load(2, {
+                    shade: [0.5, '#000'],
+                    content: '加载中...',
+                    time: 5000,
+
+                });
+           
                 const accountUrl = window.location.href;
                 const allData = await fetchTransactionData(accountUrl);
-
+                layer.closeAll("loading");
                 // 生成并显示流向图
                 generateFlowChart(allData);
+
             });
+
+            $(document).ready(function() {
+                // 选择 .table-responsive 下的 .table-striped
+                $('.table-responsive .table-striped tbody tr').each(function() {
+                    // 遍历每个 <tr> 中的 <th>
+                    $(this).find('th').each(function() {
+                        // 获取 <th> 的宽度
+                        var width = $(this).width();
+                        console.log('Width of <th>:', width);
+                        $('.account-overview-container h5').css('width', width+40 + 'px');
+                    });
+                });
+            });
+
         }
     }
 };
@@ -43,6 +65,12 @@ function createButton() {
     const button = document.createElement('button');
     button.innerText = 'Fund Flow';
     button.classList.add('fund-flow-button');
+    button.classList.add('layui-btn');
+    button.classList.add('layui-btn-sm');
+    button.classList.add('layui-btn-normal');
+    button.classList.add('layui-anim');
+    button.style.backgroundColor = '#4caf50'
+    console.log(1111111111,$)
     return button;
 }
 
@@ -155,11 +183,17 @@ function generateFlowChart(flowData) {
     document.body.appendChild(chartContainer);
 
     // 创建关闭按钮
-    const closeButton = document.createElement('button');
-    closeButton.innerText = 'Close';
-    closeButton.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 1001;';
-    closeButton.onclick = () => document.body.removeChild(chartContainer);
-    chartContainer.appendChild(closeButton);
+    var button = $('<button>', {
+        type: 'button',
+        class: 'layui-btn  layui-btn-sm',
+        style: 'float: right;background-color: rgb(76, 175, 80)',
+        text: 'Close'
+    });
+    // 为按钮添加点击事件监听
+    button.on('click', function() {
+        document.body.removeChild(chartContainer);
+    });
+    $('#flow-chart-container').append(button);
 
     // 准备图表数据
     const accountId = getAccountId(window.location.href);
@@ -428,3 +462,4 @@ function getAccountId(url) {
 function formatAmount(amount) {
     return (amount / 1e9).toFixed(9);  // 处理为小数点后9位
 }
+
