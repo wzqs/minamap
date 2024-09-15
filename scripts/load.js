@@ -21,7 +21,7 @@ window.onload = function () {
             button.addEventListener('click', async function () {
                 var loadingIndex = layer.load(2, {
                     shade: [0.5, '#000'],
-                    content: '加载中...',
+                    content: 'loading...',
                     time: 5000,
 
                 });
@@ -41,7 +41,6 @@ window.onload = function () {
                     $(this).find('th').each(function() {
                         // 获取 <th> 的宽度
                         var width = $(this).width();
-                        console.log('Width of <th>:', width);
                         $('.account-overview-container h5').css('width', width+40 + 'px');
                     });
                 });
@@ -54,10 +53,16 @@ window.onload = function () {
 // 检查当前页面URL是否匹配支持的网站
 function isSupportedSite(url) {
     const supportedSites = [
-        'https://minaexplorer.com/wallet/',
-        'https://minascan.io/mainnet/account/'
+        {
+            base: 'https://minaexplorer.com/wallet/',
+            regex: /^https:\/\/minaexplorer\.com\/wallet\/[a-zA-Z0-9]{55}$/
+        },
+        {
+            base: 'https://minascan.io/mainnet/account/',
+            regex: /^https:\/\/minascan\.io\/mainnet\/account\/[a-zA-Z0-9]{55}$/
+        }
     ];
-    return supportedSites.some(site => url.startsWith(site));
+    return supportedSites.some(site => site.regex.test(url));
 }
 
 // 创建按钮元素
@@ -70,7 +75,6 @@ function createButton() {
     button.classList.add('layui-btn-normal');
     button.classList.add('layui-anim');
     button.style.backgroundColor = '#4caf50'
-    console.log(1111111111,$)
     return button;
 }
 
