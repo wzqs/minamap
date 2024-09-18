@@ -74,7 +74,7 @@ function createButton() {
     button.classList.add('layui-btn-sm');
     button.classList.add('layui-btn-normal');
     button.classList.add('layui-anim');
-    button.style.backgroundColor = '#597fff'
+    button.style.backgroundColor = '#7191FC'
     return button;
 }
 
@@ -190,7 +190,7 @@ function generateFlowChart(flowData) {
     var button = $('<button>', {
         type: 'button',
         class: 'layui-btn  layui-btn-sm',
-        style: 'float: right;background-color: #597fff',
+        style: 'float: right;background-color: #7191FC',
         text: 'Close'
     });
     // 为按钮添加点击事件监听
