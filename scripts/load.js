@@ -3,7 +3,7 @@ window.onload = function () {
     // 检查当前URL是否匹配支持的网站
     if (isSupportedSite(window.location.href)) {
         // 查找 'Account Overview' 的元素位置
-        const accountOverviewElement = document.querySelector('h5.card-title');
+        const accountOverviewElement = document.querySelector('h5.card-title') || document.querySelector('.TabSwitcher_tabSwitcher__PGC63');
         if (accountOverviewElement) {
             // 创建一个容器来包裹标题和按钮
             const container = document.createElement('div');
@@ -74,7 +74,7 @@ function createButton() {
     button.classList.add('layui-btn-sm');
     button.classList.add('layui-btn-normal');
     button.classList.add('layui-anim');
-    button.style.backgroundColor = '#4caf50'
+    button.style.backgroundColor = '#597fff'
     return button;
 }
 
@@ -190,7 +190,7 @@ function generateFlowChart(flowData) {
     var button = $('<button>', {
         type: 'button',
         class: 'layui-btn  layui-btn-sm',
-        style: 'float: right;background-color: rgb(76, 175, 80)',
+        style: 'float: right;background-color: #597fff',
         text: 'Close'
     });
     // 为按钮添加点击事件监听
