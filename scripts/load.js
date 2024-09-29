@@ -319,16 +319,25 @@ function createChart(container, data) {
     centerNode.x = innerWidth / 2;
     centerNode.y = innerHeight / 2;
     nodeMap.set(centerNode.id, centerNode);
-
+    
     // 绘制连线
     svg.selectAll(".link")
         .data(data.links)
-        .enter().append("line")
+        .enter().append("path")
         .attr("class", "link")
-        .attr("x1", d => d.type === "incoming" ? nodeMap.get(d.source + "_in").x : centerNode.x)
-        .attr("y1", d => d.type === "incoming" ? nodeMap.get(d.source + "_in").y : centerNode.y)
-        .attr("x2", d => d.type === "incoming" ? centerNode.x : nodeMap.get(d.target + "_out").x)
-        .attr("y2", d => d.type === "incoming" ? centerNode.y : nodeMap.get(d.target + "_out").y)
+        .attr("d", d => {
+            const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
+            const targetNode = d.type === "incoming" ? centerNode : nodeMap.get(d.target + "_out");
+            const midX = (sourceNode.x + targetNode.x) / 2;
+            console.log("sourceNode.x:", sourceNode.x);
+            console.log("sourceNode.y:", sourceNode.y);
+
+
+            return `M${sourceNode.x},${sourceNode.y}
+                    L${midX},${sourceNode.y}
+                    Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x},${targetNode.y}`;
+        })
+        .attr("fill", "none")
         .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#2196F3")
         .attr("stroke-width", 2)
         .attr("marker-end", d => `url(#arrow-${d.type})`);
@@ -349,7 +358,7 @@ function createChart(container, data) {
         .attr("dy", d => d.group === 1 ? 35 : 3)
         .attr("dx", d => d.group === 1 ? 0 : (d.group === 2 ? 15 : -15))
         .attr("text-anchor", d => d.group === 1 ? "middle" : (d.group === 2 ? "start" : "end"))
-        .text(d => d.id.substring(0, 10) + "...")
+        .text(d =>  d.id.slice(-10))
         .attr("font-size", 12)
         .attr("fill", "#333");
 
