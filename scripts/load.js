@@ -291,36 +291,44 @@ function createChart(container, data) {
     // 分离入账和出账节点，同时处理既有入账又有出账的情况
     const incomingNodes = new Set(data.links.filter(l => l.type === "incoming").map(l => l.source));
     const outgoingNodes = new Set(data.links.filter(l => l.type === "outgoing").map(l => l.target));
-    const bothDirectionNodes = new Set([...incomingNodes].filter(x => outgoingNodes.has(x)));
 
     const centerNode = data.nodes.find(n => n.group === 1);
 
-    // 计算节点位置
+    // 获取最大和最小节点数量
     const nodeHeight = 30;
     const maxNodes = Math.max(incomingNodes.size, outgoingNodes.size);
-    const yScale = d3.scaleLinear()
+    const minNodes = Math.min(incomingNodes.size, outgoingNodes.size);
+
+    // 计算比例尺
+    const yScaleMax = d3.scaleLinear()
         .domain([0, maxNodes - 1])
         .range([nodeHeight, innerHeight - nodeHeight]);
 
-    // 创建节点 ID 到节点对象的映射
+    const yScaleMin = d3.scaleLinear()
+        .domain([0, minNodes - 1])
+        .range([yScaleMax(0), yScaleMax(maxNodes - 1)]);  // 在较大侧的首尾之间均匀分布
+
+    // Map节点ID到对象
     const nodeMap = new Map();
 
-    // 处理入账节点
+    // 处理转入节点
     [...incomingNodes].forEach((id, i) => {
-        nodeMap.set(id + "_in", {id: id, x: 0, y: yScale(i), group: 2});
+        const yPosition = (incomingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
+        nodeMap.set(id + "_in", {id: id, x: 0, y: yPosition, group: 2});
     });
 
-    // 处理出账节点
+    // 处理转出节点
     [...outgoingNodes].forEach((id, i) => {
-        nodeMap.set(id + "_out", {id: id, x: innerWidth, y: yScale(i), group: 3});
+        const yPosition = (outgoingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
+        nodeMap.set(id + "_out", {id: id, x: innerWidth, y: yPosition, group: 3});
     });
 
-    // 设置中心节点
+    // 中心节点位置
     centerNode.x = innerWidth / 2;
     centerNode.y = innerHeight / 2;
     nodeMap.set(centerNode.id, centerNode);
-    
-    // 绘制连线
+
+    // 绘制路径
     svg.selectAll(".link")
         .data(data.links)
         .enter().append("path")
@@ -328,19 +336,25 @@ function createChart(container, data) {
         .attr("d", d => {
             const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
             const targetNode = d.type === "incoming" ? centerNode : nodeMap.get(d.target + "_out");
+
             const midX = (sourceNode.x + targetNode.x) / 2;
-            console.log("sourceNode.x:", sourceNode.x);
-            console.log("sourceNode.y:", sourceNode.y);
 
-
-            return `M${sourceNode.x},${sourceNode.y}
-                    L${midX},${sourceNode.y}
-                    Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x},${targetNode.y}`;
+            if (d.type === "incoming") {
+                return `M${sourceNode.x},${sourceNode.y}
+                        L${midX},${sourceNode.y}
+                        Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x},${targetNode.y}`;
+            } else {
+                return `M${sourceNode.x},${sourceNode.y}
+                        Q${(sourceNode.x + midX) / 2},${targetNode.y} ${midX},${targetNode.y}
+                        L${targetNode.x},${targetNode.y}`;
+            }
         })
         .attr("fill", "none")
         .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#2196F3")
         .attr("stroke-width", 2)
         .attr("marker-end", d => `url(#arrow-${d.type})`);
+
+
 
     // 绘制节点
     const node = svg.selectAll(".node")
