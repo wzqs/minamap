@@ -19,3 +19,8 @@ chrome extension to generate $Mina fund flow
 3. wait for the flow chart to load
 4. click the flow chart to see the details
 
+
+## todo
+
+1. 
+

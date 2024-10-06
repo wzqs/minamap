@@ -9,19 +9,6 @@
     border-color: #7191FC !important; /* 设置加载动画颜色 */
 }
 
-#flow-chart-container {
-    position: fixed;
-    top: 10%;
-    left: 10%;
-    width: 80%;
-    height: 80%;
-    background: white;
-    border: 1px solid #ccc;
-    z-index: 1000;
-    overflow: auto;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
 .link {
     stroke-opacity: 0.6;
 }
@@ -34,13 +21,20 @@
     pointer-events: none;
 }
 
-#flow-chart-container {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 /* 调整箭头大小 */
 #arrow-incoming, #arrow-outgoing {
     transform: scale(1.5);
+}
+
+/* 添加流程图容器样式 */
+#flow-chart-container {
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    height: 80%;
+    background: white;
+    border: 1px solid #ccc;
+    z-index: 1000;
+    overflow: hidden;
 }

@@ -1,217 +1,171 @@
-// 页面加载时执行的函数
+// Function executed when the page loads
 window.onload = function () {
-    // 检查当前URL是否匹配支持的网站
     if (isSupportedSite(window.location.href)) {
-        // 查找 'Account Overview' 的元素位置
         const accountOverviewElement = document.querySelector('h5.card-title') || document.querySelector('.TabSwitcher_tabSwitcher__PGC63');
         if (accountOverviewElement) {
-            // 创建一个容器来包裹标题和按钮
-            const container = document.createElement('div');
-            container.classList.add('account-overview-container');
-            
-            // 将原有的标题移动到新容器中
-            accountOverviewElement.parentNode.insertBefore(container, accountOverviewElement);
-            container.appendChild(accountOverviewElement);
-            
-            // 创建并插入按钮
-            const button = createButton();
-            container.appendChild(button);
-
-            // 为按钮添加点击事件监听
-            button.addEventListener('click', async function () {
-                var loadingIndex = layer.load(2, {
-                    shade: [0.5, '#000'],
-                    content: 'loading...',
-                    time: 5000,
-
-                });
-           
-                const accountUrl = window.location.href;
-                const allData = await fetchTransactionData(accountUrl);
-                layer.closeAll("loading");
-                // 生成并显示流向图
-                generateFlowChart(allData);
-
-            });
-
-            $(document).ready(function() {
-                // 选择 .table-responsive 下的 .table-striped
-                $('.table-responsive .table-striped tbody tr').each(function() {
-                    // 遍历每个 <tr> 中的 <th>
-                    $(this).find('th').each(function() {
-                        // 获取 <th> 的宽度
-                        var width = $(this).width();
-                        $('.account-overview-container h5').css('width', width+40 + 'px');
-                    });
-                });
-            });
-
+            setupAccountOverview(accountOverviewElement);
         }
     }
 };
 
-// 检查当前页面URL是否匹配支持的网站
 function isSupportedSite(url) {
     const supportedSites = [
-        {
-            base: 'https://minaexplorer.com/wallet/',
-            regex: /^https:\/\/minaexplorer\.com\/wallet\/[a-zA-Z0-9]{55}$/
-        },
-        {
-            base: 'https://minascan.io/mainnet/account/',
-            regex: /^https:\/\/minascan\.io\/mainnet\/account\/[a-zA-Z0-9]{55}$/
-        }
+        { regex: /^https:\/\/minaexplorer\.com\/wallet\/[a-zA-Z0-9]{55}$/ },
+        { regex: /^https:\/\/minascan\.io\/mainnet\/account\/[a-zA-Z0-9]{55}$/ }
     ];
     return supportedSites.some(site => site.regex.test(url));
 }
 
-// 创建按钮元素
+function setupAccountOverview(accountOverviewElement) {
+    const container = createContainer(accountOverviewElement);
+    const button = createButton();
+    container.appendChild(button);
+
+    button.addEventListener('click', handleButtonClick);
+
+    adjustContainerWidth();
+}
+
+function createContainer(accountOverviewElement) {
+    const container = document.createElement('div');
+    container.classList.add('account-overview-container');
+    accountOverviewElement.parentNode.insertBefore(container, accountOverviewElement);
+    container.appendChild(accountOverviewElement);
+    return container;
+}
+
 function createButton() {
     const button = document.createElement('button');
     button.innerText = 'Fund Flow';
-    button.classList.add('fund-flow-button');
-    button.classList.add('layui-btn');
-    button.classList.add('layui-btn-sm');
-    button.classList.add('layui-btn-normal');
-    button.classList.add('layui-anim');
-    button.style.backgroundColor = '#7191FC'
+    button.classList.add('fund-flow-button', 'layui-btn', 'layui-btn-sm', 'layui-btn-normal', 'layui-anim');
+    button.style.backgroundColor = '#7191FC';
     return button;
 }
 
-// 发送API请求获取交易数据
-async function fetchTransactionData(accountUrl) {
-    // 根据不同的网站构造请求的API URL
-    let apiUrl;
-    if (accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
-        apiUrl = `https://minaexplorer.com/all-transactions/${getAccountId(accountUrl)}`;
-
-        // 第一次请求，获取交易记录数量
-        const fetchTxNums = `${apiUrl}?length=1`;
-        const response = await fetch(fetchTxNums);
-        const jsonData = await response.json();
-
-        // 从第一次请求的响应中提取交易记录数量
-        const txNums = jsonData.recordsTotal;
-
-        // 第二次请求，根据交易记录数量获取所有记录
-        const fetchAllTx = `${apiUrl}?length=${txNums}`;
-        const fullResponse = await fetch(fetchAllTx);
-
-        if (!fullResponse.ok) {
-            throw new Error('network response not ok');
-        }
-
-        const fullData = await fullResponse.json();
-
-        // 提取转入转出地址和金额和地址标签
-        const flowData = processTransactionData(fullData);
-        return flowData;
-    }
-    throw new Error('unsupported site');
-
-}
-
-// 处理交易数据，提取转入转出地址及金额，去重并汇总
-function processTransactionData(data) {
-    const accountId = getAccountId(window.location.href);
-    const flowData = {
-        incoming: new Map(),  // 用于存储转入的地址金额
-        outgoing: new Map()   // 用于存储转出的地址金额
-    };
-
-    data.data.forEach(tx => {
-        if (tx.kind === 'PAYMENT') {
-            const { amount, from, to, fromUserName, toUserName, memo } = tx;
-
-            // 过滤掉 amount 为 0 的交易
-            if (amount === 0) return;
-
-            // 处理转出交易（当前账户为转出方）
-            if (from === accountId) {
-                if (flowData.outgoing.has(to)) {
-                    const existing = flowData.outgoing.get(to);
-                    flowData.outgoing.set(to, {
-                        amount: existing.amount + amount,
-                        userName: toUserName || "Unknown",
-                        memo: existing.memo || memo || ""  // 保持已有 memo 或更新 memo
-                    });
-                } else {
-                    flowData.outgoing.set(to, {
-                        amount: amount,
-                        userName: toUserName || "Unknown",
-                        memo: memo || ""  // 设置 memo
-                    });
-                }
-            }
-
-            // 处理转入交易（当前账户为转入方）
-            if (to === accountId) {
-                if (flowData.incoming.has(from)) {
-                    const existing = flowData.incoming.get(from);
-                    flowData.incoming.set(from, {
-                        amount: existing.amount + amount,
-                        userName: fromUserName || "Unknown",
-                        memo: existing.memo || memo || ""  // 保持已有 memo 或更新 memo
-                    });
-                } else {
-                    flowData.incoming.set(from, {
-                        amount: amount,
-                        userName: fromUserName || "Unknown",
-                        memo: memo || ""  // 设置 memo
-                    });
-                }
-            }
-        }
+async function handleButtonClick() {
+    const loadingIndex = layer.load(2, {
+        shade: [0.5, '#000'],
+        content: 'loading...',
+        time: 5000,
     });
 
-    // 打印汇总结果：格式化金额并打印去重后的地址、用户名及 memo
-    // console.log('转入地址、金额和 memo:');
-    // flowData.incoming.forEach((value, address) => {
-    //     console.log(`地址: ${address}, 用户名: ${value.userName}, 金额: ${formatAmount(value.amount)}, memo: ${value.memo}`);
-    // });
+    try {
+        const accountUrl = window.location.href;
+        const allData = await fetchTransactionData(accountUrl);
+        generateFlowChart(allData);
+    } finally {
+        layer.closeAll("loading");
+    }
+}
 
-    // console.log('转出地址、金额和 memo:');
-    // flowData.outgoing.forEach((value, address) => {
-    //     console.log(`地址: ${address}, 用户名: ${value.userName}, 金额: ${formatAmount(value.amount)}, memo: ${value.memo}`);
-    // });
+function adjustContainerWidth() {
+    $(document).ready(function() {
+        $('.table-responsive .table-striped tbody tr').each(function() {
+            $(this).find('th').each(function() {
+                var width = $(this).width();
+                $('.account-overview-container h5').css('width', width + 40 + 'px');
+            });
+        });
+    });
+}
+
+async function fetchTransactionData(accountUrl) {
+    if (!accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
+        throw new Error('unsupported site');
+    }
+
+    const apiUrl = `https://minaexplorer.com/all-transactions/${getAccountId(accountUrl)}`;
+    const txNums = await fetchTxNums(apiUrl);
+    const fullData = await fetchAllTx(apiUrl, txNums);
+    return processTransactionData(fullData);
+}
+
+async function fetchTxNums(apiUrl) {
+    const response = await fetch(`${apiUrl}?length=1`);
+    const jsonData = await response.json();
+    return jsonData.recordsTotal;
+}
+
+async function fetchAllTx(apiUrl, txNums) {
+    const response = await fetch(`${apiUrl}?length=${txNums}`);
+    if (!response.ok) {
+        throw new Error('network response not ok');
+    }
+    return response.json();
+}
+
+function processTransactionData(data) {
+    const accountId = getAccountId(window.location.href);
+    const flowData = { incoming: new Map(), outgoing: new Map() };
+
+    data.data.forEach(tx => {
+        if (tx.kind === 'PAYMENT' && tx.amount !== 0) {
+            processTransaction(tx, accountId, flowData);
+        }
+    });
 
     return flowData;
 }
 
+function processTransaction(tx, accountId, flowData) {
+    const { amount, from, to, fromUserName, toUserName, memo } = tx;
+    const isOutgoing = from === accountId;
+    const targetMap = isOutgoing ? flowData.outgoing : flowData.incoming;
+    const targetAddress = isOutgoing ? to : from;
+    const userName = isOutgoing ? toUserName : fromUserName;
+
+    updateFlowData(targetMap, targetAddress, amount, userName, memo);
+}
+
+function updateFlowData(map, address, amount, userName, memo) {
+    if (map.has(address)) {
+        const existing = map.get(address);
+        map.set(address, {
+            amount: existing.amount + amount,
+            userName: userName || "Unknown",
+            memo: existing.memo || memo || ""
+        });
+    } else {
+        map.set(address, {
+            amount: amount,
+            userName: userName || "Unknown",
+            memo: memo || ""
+        });
+    }
+}
 
 function generateFlowChart(flowData) {
-    // 创建一个新的div元素来容纳图表
+    // 创建一个新的 div 元素来容纳图表
     const chartContainer = document.createElement('div');
     chartContainer.id = 'flow-chart-container';
-    chartContainer.style.cssText = 'position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border: 1px solid #ccc; z-index: 1000; overflow: auto;';
     document.body.appendChild(chartContainer);
 
-    // 创建关闭按钮
+    // Create close button
     var button = $('<button>', {
         type: 'button',
         class: 'layui-btn  layui-btn-sm',
         style: 'float: right;background-color: #7191FC',
         text: 'Close'
     });
-    // 为按钮添加点击事件监听
+    // Add click event listener to the button
     button.on('click', function() {
         document.body.removeChild(chartContainer);
     });
     $('#flow-chart-container').append(button);
 
-    // 准备图表数据
+    // Prepare chart data
     const accountId = getAccountId(window.location.href);
-    const nodes = [{ id: accountId, group: 1 }];
+    const nodes = [{ id: accountId, group: 1, userName: '' }];
     const links = [];
     const addedNodes = new Set([accountId]);
 
-    console.log("原始 flowData:", flowData);
+    console.log("Initial flowData:", flowData);
 
     if (flowData && typeof flowData === 'object') {
         if (flowData.incoming && flowData.incoming instanceof Map) {
             flowData.incoming.forEach((value, address) => {
                 if (!addedNodes.has(address)) {
-                    nodes.push({ id: address, group: 2 });
+                    nodes.push({ id: address, group: 2, userName: value.userName });
                     addedNodes.add(address);
                 }
                 links.push({
@@ -229,7 +183,7 @@ function generateFlowChart(flowData) {
         if (flowData.outgoing && flowData.outgoing instanceof Map) {
             flowData.outgoing.forEach((value, address) => {
                 if (!addedNodes.has(address)) {
-                    nodes.push({ id: address, group: 3 });
+                    nodes.push({ id: address, group: 3, userName: value.userName });
                     addedNodes.add(address);
                 }
                 links.push({
@@ -245,9 +199,9 @@ function generateFlowChart(flowData) {
         }
     }
 
-    console.log("处理后的 Links:", links);
+    console.log("Processed Links:", links);
 
-    // 如果没有数据,显示提示信息
+    // If there's no data, display a message
     if (nodes.length === 1 && links.length === 0) {
         const noDataMessage = document.createElement('p');
         noDataMessage.textContent = 'No available transaction data';
@@ -255,25 +209,25 @@ function generateFlowChart(flowData) {
         return;
     }
 
-    // 创建图表
+    // Create chart
     createChart(chartContainer, { nodes, links });
 }
 
 function createChart(container, data) {
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = {top: 50, right: 220, bottom: 50, left: 220};
+    const margin = {top: 50, right: 50, bottom: 50, left: 50};
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
     const svg = d3.select(container)
         .append("svg")
-        .attr("width", width)
-        .attr("height", height)
+        .attr("width", "100%") // Change to percentage
+        .attr("height", "100%") // Change to percentage
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // 定义箭头
+    // Define arrow
     svg.append("defs").selectAll("marker")
         .data(["incoming", "outgoing"])
         .enter().append("marker")
@@ -288,39 +242,46 @@ function createChart(container, data) {
         .attr("fill", d => d === "incoming" ? "#4CAF50" : "#2196F3")
         .attr("d", "M0,-5L10,0L0,5");
 
-    // 分离入账和出账节点，同时处理既有入账又有出账的情况
+    // Separate incoming and outgoing nodes, and handle cases with both incoming and outgoing
     const incomingNodes = new Set(data.links.filter(l => l.type === "incoming").map(l => l.source));
     const outgoingNodes = new Set(data.links.filter(l => l.type === "outgoing").map(l => l.target));
 
+    // 创建一个集合来存储同时作为转入和转出的地址
+    const bothInAndOut = new Set(
+        [...incomingNodes].filter(node => outgoingNodes.has(node))
+    );
+
     const centerNode = data.nodes.find(n => n.group === 1);
 
-    // 获取最大和最小节点数量
+    // Get the maximum and minimum number of nodes
     const nodeHeight = 30;
     const maxNodes = Math.max(incomingNodes.size, outgoingNodes.size);
     const minNodes = Math.min(incomingNodes.size, outgoingNodes.size);
 
-    // 计算比例尺
+    // Calculate scale
     const yScaleMax = d3.scaleLinear()
         .domain([0, maxNodes - 1])
         .range([nodeHeight, innerHeight - nodeHeight]);
 
     const yScaleMin = d3.scaleLinear()
         .domain([0, minNodes - 1])
-        .range([yScaleMax(0), yScaleMax(maxNodes - 1)]);  // 在较大侧的首尾之间均匀分布
+        .range([yScaleMax(0), yScaleMax(maxNodes - 1)]);  // Evenly distribute between the start and end of the larger side
 
-    // Map节点ID到对象
+    // Map node ID to object
     const nodeMap = new Map();
 
     // 处理转入节点
     [...incomingNodes].forEach((id, i) => {
         const yPosition = (incomingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
-        nodeMap.set(id + "_in", {id: id, x: 0, y: yPosition, group: 2});
+        const nodeData = data.nodes.find(n => n.id === id) || {};
+        nodeMap.set(id + "_in", {id: id, x: 100, y: yPosition, group: 2, userName: nodeData.userName || ""});
     });
 
     // 处理转出节点
     [...outgoingNodes].forEach((id, i) => {
         const yPosition = (outgoingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
-        nodeMap.set(id + "_out", {id: id, x: innerWidth, y: yPosition, group: 3});
+        const nodeData = data.nodes.find(n => n.id === id) || {};
+        nodeMap.set(id + "_out", {id: id, x: innerWidth - 100, y: yPosition, group: 3, userName: nodeData.userName || ""});
     });
 
     // 中心节点位置
@@ -328,10 +289,46 @@ function createChart(container, data) {
     centerNode.y = innerHeight / 2;
     nodeMap.set(centerNode.id, centerNode);
 
-    // 绘制路径
-    svg.selectAll(".link")
+    // 修改节点绘制部分
+    const node = svg.selectAll(".node")
+        .data([...nodeMap.values()])
+        .enter().append("g")
+        .attr("class", d => `node ${d.group === 1 ? 'center' : ''}`)
+        .attr("transform", d => `translate(${d.x},${d.y})`);
+
+    node.append("rect")
+        .attr("width", 120)
+        .attr("height", 30)
+        .attr("x", d => d.group === 1 ? -60 : (d.group === 2 ? -120 : 0))
+        .attr("y", -15)
+        .attr("fill", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))  // 设置背景颜色与边框一致
+        .attr("stroke", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))  // 保持边框颜色不变
+        .attr("stroke-width", 1)
+        .attr("rx", 4)
+        .attr("ry", 4);
+
+    node.append("text")
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .attr("x", d => d.group === 2 ? -60 : (d.group === 3 ? 60 : 0))
+        .text(d => {
+            const displayName = d.userName ? ` (${d.userName})` : '';
+            return `${d.id.slice(-10)}${displayName}`;
+        })
+        .attr("fill", d => {
+            if (d.group !== 1 && bothInAndOut.has(d.id)) {
+                return "black";
+            }
+            return "#fff";
+        });
+
+    // 修改路径绘制和交易信息标签
+    const link = svg.selectAll(".link")
         .data(data.links)
-        .enter().append("path")
+        .enter().append("g")
+        .attr("class", "link-group");
+
+    link.append("path")
         .attr("class", "link")
         .attr("d", d => {
             const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
@@ -341,11 +338,11 @@ function createChart(container, data) {
 
             if (d.type === "incoming") {
                 return `M${sourceNode.x},${sourceNode.y}
-                        L${midX},${sourceNode.y}
-                        Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x},${targetNode.y}`;
+                        L${midX - 10},${sourceNode.y}
+                        Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x - 60},${targetNode.y}`;
             } else {
-                return `M${sourceNode.x},${sourceNode.y}
-                        Q${(sourceNode.x + midX) / 2},${targetNode.y} ${midX},${targetNode.y}
+                return `M${sourceNode.x + 60},${sourceNode.y}
+                        Q${(sourceNode.x + midX) / 2},${targetNode.y} ${midX + 10},${targetNode.y}
                         L${targetNode.x},${targetNode.y}`;
             }
         })
@@ -354,70 +351,42 @@ function createChart(container, data) {
         .attr("stroke-width", 2)
         .attr("marker-end", d => `url(#arrow-${d.type})`);
 
-
-
-    // 绘制节点
-    const node = svg.selectAll(".node")
-        .data([...nodeMap.values()])
-        .enter().append("g")
-        .attr("class", "node")
-        .attr("transform", d => `translate(${d.x},${d.y})`);
-
-    node.append("circle")
-        .attr("r", d => d.group === 1 ? 20 : 6)
-        .attr("fill", d => d.group === 1 ? "#FFC107" : (d.group === 2 ? "#4CAF50" : "#2196F3"));
-
-    // 添加地址标签
-    node.append("text")
-        .attr("dy", d => d.group === 1 ? 35 : 3)
-        .attr("dx", d => d.group === 1 ? 0 : (d.group === 2 ? 15 : -15))
-        .attr("text-anchor", d => d.group === 1 ? "middle" : (d.group === 2 ? "start" : "end"))
-        .text(d =>  d.id.slice(-10))
-        .attr("font-size", 12)
-        .attr("fill", "#333");
-
     // 添加交易信息标签
-    svg.selectAll(".transaction-info")
-        .data(data.links)
-        .enter().append("text")
+    link.append("text")
         .attr("class", "transaction-info")
-        .attr("x", d => {
-            const sourceX = d.type === "incoming" ? nodeMap.get(d.source + "_in").x : centerNode.x;
-            const targetX = d.type === "incoming" ? centerNode.x : nodeMap.get(d.target + "_out").x;
-            return (sourceX + targetX) / 2;
-        })
-        .attr("y", d => {
-            const sourceY = d.type === "incoming" ? nodeMap.get(d.source + "_in").y : centerNode.y;
-            const targetY = d.type === "incoming" ? centerNode.y : nodeMap.get(d.target + "_out").y;
-            return (sourceY + targetY) / 2;
-        })
-        .attr("text-anchor", "middle")
         .attr("dy", -10)
-        .text(d => `${(d.value / 1e9).toFixed(4)} MINA`)
+        .attr("text-anchor", "middle")
         .attr("font-size", 10)
-        .attr("fill", "#666");
+        .attr("fill", "#666")
+        .attr("transform", d => {
+            const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
+            const targetNode = d.type === "incoming" ? centerNode : nodeMap.get(d.target + "_out");
+            const midX = (sourceNode.x + targetNode.x) / 2;
+            const x = d.type === "incoming" ? (sourceNode.x + midX - 10) / 2 : (midX + 10 + targetNode.x) / 2;
+            const y = d.type === "incoming" ? sourceNode.y : targetNode.y;
+            return `translate(${x}, ${y})`;
+        })
+        .text(d => `${(d.value / 1e9).toFixed(4)} MINA`);
 
-    // 添加缩放功能
-    const zoom = d3.zoom()
-        .scaleExtent([0.1, 4])
-        .on("zoom", (event) => {
-            svg.attr("transform", event.transform);
-        });
-
-    d3.select(container).select("svg").call(zoom);
+    // 为每条路径添加一个不可见的路径，用于文本定位
+    link.append("path")
+        .attr("id", (d, i) => `path-${i}`)
+        .attr("d", d => {
+            const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
+            const targetNode = d.type === "incoming" ? centerNode : nodeMap.get(d.target + "_out");
+            return `M${sourceNode.x},${sourceNode.y} L${targetNode.x},${targetNode.y}`;
+        })
+        .attr("fill", "none")
+        .attr("stroke", "none");
 }
 
-
-
-// 从 URL 中提取账户ID
+// Extract account ID from URL
 function getAccountId(url) {
     const parts = url.split('/');
     return parts[parts.length - 1];
 }
 
-
-// 帮助函数：将金额格式化为小数点后9位的数字
+// Helper function: format amount as a decimal number with 9 decimal places
 function formatAmount(amount) {
-    return (amount / 1e9).toFixed(9);  // 处理为小数点后9位
+    return (amount / 1e9).toFixed(9);  // Process as a decimal number with 9 decimal places
 }
-
