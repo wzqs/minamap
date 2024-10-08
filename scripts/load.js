@@ -307,7 +307,11 @@ function createChart(container, data) {
         .attr("stroke", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke-width", 1)
         .attr("rx", 4)
-        .attr("ry", 4);
+        .attr("ry", 4)
+        .style("cursor", "pointer") // 添加鼠标指针样式
+        .on("click", function(event, d) { // 添加点击事件
+            window.open(`https://minaexplorer.com/wallet/${d.id}`, '_blank','noopener','noreferrer');
+        });
 
     node.append("text")
         .attr("dy", ".35em")
