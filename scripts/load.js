@@ -216,7 +216,7 @@ function generateFlowChart(flowData) {
 function createChart(container, data) {
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = {top: 50, right: 50, bottom: 50, left: 50};
+    const margin = {top: 50, right: 120, bottom: 100, left: 120}; // 增加左右边距
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -296,13 +296,15 @@ function createChart(container, data) {
         .attr("class", d => `node ${d.group === 1 ? 'center' : ''}`)
         .attr("transform", d => `translate(${d.x},${d.y})`);
 
+    // 调整 rect 的宽度
+    const rectWidth = 180; // 增加宽度
     node.append("rect")
-        .attr("width", 120)
+        .attr("width", rectWidth)
         .attr("height", 30)
-        .attr("x", d => d.group === 1 ? -60 : (d.group === 2 ? -120 : 0))
+        .attr("x", d => d.group === 1 ? -rectWidth/2 : (d.group === 2 ? -rectWidth : 0))
         .attr("y", -15)
-        .attr("fill", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))  // 设置背景颜色与边框一致
-        .attr("stroke", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))  // 保持边框颜色不变
+        .attr("fill", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
+        .attr("stroke", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke-width", 1)
         .attr("rx", 4)
         .attr("ry", 4);
@@ -310,10 +312,10 @@ function createChart(container, data) {
     node.append("text")
         .attr("dy", ".35em")
         .attr("text-anchor", "middle")
-        .attr("x", d => d.group === 2 ? -60 : (d.group === 3 ? 60 : 0))
+        .attr("x", d => d.group === 2 ? -rectWidth/2 : (d.group === 3 ? rectWidth/2 : 0))
         .text(d => {
-            const displayName = d.userName ? ` (${d.userName})` : '';
-            return `${d.id.slice(-10)}${displayName}`;
+            const displayName = d.userName ? ` ${d.userName}` : '';
+            return `${displayName} (${d.id.slice(-4)})`;
         })
         .attr("fill", d => {
             if (d.group !== 1 && bothInAndOut.has(d.id)) {
@@ -322,7 +324,7 @@ function createChart(container, data) {
             return "#fff";
         });
 
-    // 修改路径绘制和交易信息标签
+    // 修改路径绘制部分
     const link = svg.selectAll(".link")
         .data(data.links)
         .enter().append("g")
@@ -339,9 +341,9 @@ function createChart(container, data) {
             if (d.type === "incoming") {
                 return `M${sourceNode.x},${sourceNode.y}
                         L${midX - 10},${sourceNode.y}
-                        Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x - 60},${targetNode.y}`;
+                        Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x - rectWidth/2},${targetNode.y}`;
             } else {
-                return `M${sourceNode.x + 60},${sourceNode.y}
+                return `M${sourceNode.x + rectWidth/2},${sourceNode.y}
                         Q${(sourceNode.x + midX) / 2},${targetNode.y} ${midX + 10},${targetNode.y}
                         L${targetNode.x},${targetNode.y}`;
             }
