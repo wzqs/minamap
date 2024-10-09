@@ -99,7 +99,12 @@ function processTransactionData(data) {
     const flowData = { incoming: new Map(), outgoing: new Map() };
 
     data.data.forEach(tx => {
-        if (tx.kind === 'PAYMENT' && tx.amount !== 0) {
+        // Process the transaction if it's a valid payment
+        // Conditions:
+        // 1. Transaction type is 'PAYMENT'
+        // 2. Amount is not zero
+        // 3. Sender and receiver are different
+        if (tx.kind === 'PAYMENT' && tx.amount !== 0 && tx.from !== tx.to) {
             processTransaction(tx, accountId, flowData);
         }
     });
@@ -158,8 +163,6 @@ function generateFlowChart(flowData) {
     const nodes = [{ id: accountId, group: 1, userName: '' }];
     const links = [];
     const addedNodes = new Set([accountId]);
-
-    console.log("Initial flowData:", flowData);
 
     if (flowData && typeof flowData === 'object') {
         if (flowData.incoming && flowData.incoming instanceof Map) {
