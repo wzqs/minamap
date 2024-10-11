@@ -1,40 +1,47 @@
 /* styles.css */
+/* Account overview container */
 .account-overview-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
+/* Custom loading animation color */
 .layui-layer-loading-2::after {
-    border-color: #7191FC !important; /* 设置加载动画颜色 */
+    border-color: #7191FC !important;
 }
 
+/* Link style for flow chart */
 .link {
     stroke-opacity: 0.6;
 }
 
+/* Prevent text selection on nodes */
 .node text {
     pointer-events: none;
 }
 
+/* Prevent interaction with transaction info and date */
 .transaction-info, .transaction-date {
     pointer-events: none;
 }
 
-/* 调整箭头大小 */
+/* Adjust arrow size */
 #arrow-incoming, #arrow-outgoing {
     transform: scale(1.5);
 }
 
-/* 添加流程图容器样式 */
+/* Flow chart container styles */
 #flow-chart-container {
     position: fixed;
-    top: 10%;
-    left: 10%;
-    width: 80%;
-    height: 80%;
-    background: white;
+    top: 2vh;  
+    left: 5vw;
+    width: 90vw;
+    height: 96vh; 
+    background-color: white;
     border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
     z-index: 1000;
     overflow: hidden;
 }

@@ -8,6 +8,7 @@ window.onload = function () {
     }
 };
 
+// Check if the current URL is a supported site
 function isSupportedSite(url) {
     const supportedSites = [
         { regex: /^https:\/\/minaexplorer\.com\/wallet\/[a-zA-Z0-9]{55}$/ },
@@ -16,6 +17,7 @@ function isSupportedSite(url) {
     return supportedSites.some(site => site.regex.test(url));
 }
 
+// Set up the account overview section
 function setupAccountOverview(accountOverviewElement) {
     const container = createContainer(accountOverviewElement);
     const button = createButton();
@@ -26,6 +28,7 @@ function setupAccountOverview(accountOverviewElement) {
     adjustContainerWidth();
 }
 
+// Create a container for the account overview
 function createContainer(accountOverviewElement) {
     const container = document.createElement('div');
     container.classList.add('account-overview-container');
@@ -34,6 +37,7 @@ function createContainer(accountOverviewElement) {
     return container;
 }
 
+// Create the "Fund Flow" button
 function createButton() {
     const button = document.createElement('button');
     button.innerText = 'Fund Flow';
@@ -42,6 +46,7 @@ function createButton() {
     return button;
 }
 
+// Handle the button click event
 async function handleButtonClick() {
     const loadingIndex = layer.load(2, {
         shade: [0.5, '#000'],
@@ -52,12 +57,14 @@ async function handleButtonClick() {
     try {
         const accountUrl = window.location.href;
         const allData = await fetchTransactionData(accountUrl);
+
         generateFlowChart(allData);
     } finally {
         layer.closeAll("loading");
     }
 }
 
+// Adjust the container width based on the table
 function adjustContainerWidth() {
     $(document).ready(function() {
         $('.table-responsive .table-striped tbody tr').each(function() {
@@ -69,6 +76,7 @@ function adjustContainerWidth() {
     });
 }
 
+// Fetch transaction data for the account
 async function fetchTransactionData(accountUrl) {
     if (!accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
         throw new Error('unsupported site');
@@ -80,12 +88,19 @@ async function fetchTransactionData(accountUrl) {
     return processTransactionData(fullData);
 }
 
+// Fetch the number of transactions
 async function fetchTxNums(apiUrl) {
     const response = await fetch(`${apiUrl}?length=1`);
     const jsonData = await response.json();
-    return jsonData.recordsTotal;
+    const totalTxs = jsonData.recordsTotal;
+
+    // Limit the number of transactions to 100
+    const MAX_TX_LIMIT = 2500;
+
+    return Math.min(totalTxs, MAX_TX_LIMIT);
 }
 
+// Fetch all transactions
 async function fetchAllTx(apiUrl, txNums) {
     const response = await fetch(`${apiUrl}?length=${txNums}`);
     if (!response.ok) {
@@ -94,6 +109,7 @@ async function fetchAllTx(apiUrl, txNums) {
     return response.json();
 }
 
+// Process the fetched transaction data
 function processTransactionData(data) {
     const accountId = getAccountId(window.location.href);
     const flowData = { incoming: new Map(), outgoing: new Map() };
@@ -112,16 +128,18 @@ function processTransactionData(data) {
     return flowData;
 }
 
+// Process a single transaction
 function processTransaction(tx, accountId, flowData) {
     const { amount, from, to, fromUserName, toUserName, memo } = tx;
     const isOutgoing = from === accountId;
     const targetMap = isOutgoing ? flowData.outgoing : flowData.incoming;
     const targetAddress = isOutgoing ? to : from;
     const userName = isOutgoing ? toUserName : fromUserName;
-
+    
     updateFlowData(targetMap, targetAddress, amount, userName, memo);
 }
 
+// Update the flow data with transaction information
 function updateFlowData(map, address, amount, userName, memo) {
     if (map.has(address)) {
         const existing = map.get(address);
@@ -139,8 +157,9 @@ function updateFlowData(map, address, amount, userName, memo) {
     }
 }
 
+// Generate the flow chart based on the processed data
 function generateFlowChart(flowData) {
-    // 创建一个新的 div 元素来容纳图表
+    // Create a new div element to contain the chart
     const chartContainer = document.createElement('div');
     chartContainer.id = 'flow-chart-container';
     document.body.appendChild(chartContainer);
@@ -164,9 +183,13 @@ function generateFlowChart(flowData) {
     const links = [];
     const addedNodes = new Set([accountId]);
 
+    const MAX_NODES = 28;
+
     if (flowData && typeof flowData === 'object') {
         if (flowData.incoming && flowData.incoming instanceof Map) {
-            flowData.incoming.forEach((value, address) => {
+            // limit the number of incoming nodes
+            const incomingEntries = Array.from(flowData.incoming.entries()).slice(0, MAX_NODES);
+            incomingEntries.forEach(([address, value]) => {
                 if (!addedNodes.has(address)) {
                     nodes.push({ id: address, group: 2, userName: value.userName });
                     addedNodes.add(address);
@@ -184,7 +207,9 @@ function generateFlowChart(flowData) {
         }
 
         if (flowData.outgoing && flowData.outgoing instanceof Map) {
-            flowData.outgoing.forEach((value, address) => {
+            // limit the number of outgoing nodes
+            const outgoingEntries = Array.from(flowData.outgoing.entries()).slice(0, MAX_NODES);
+            outgoingEntries.forEach(([address, value]) => {
                 if (!addedNodes.has(address)) {
                     nodes.push({ id: address, group: 3, userName: value.userName });
                     addedNodes.add(address);
@@ -216,10 +241,11 @@ function generateFlowChart(flowData) {
     createChart(chartContainer, { nodes, links });
 }
 
+// Create the flow chart using D3.js
 function createChart(container, data) {
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = {top: 50, right: 120, bottom: 100, left: 120}; // 增加左右边距
+    const margin = {top: 50, right: 120, bottom: 100, left: 120};
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -249,15 +275,17 @@ function createChart(container, data) {
     const incomingNodes = new Set(data.links.filter(l => l.type === "incoming").map(l => l.source));
     const outgoingNodes = new Set(data.links.filter(l => l.type === "outgoing").map(l => l.target));
 
-    // 创建一个集合来存储同时作为转入和转出的地址
+    // Create a set to store addresses that are both incoming and outgoing  
     const bothInAndOut = new Set(
         [...incomingNodes].filter(node => outgoingNodes.has(node))
     );
 
     const centerNode = data.nodes.find(n => n.group === 1);
 
-    // Get the maximum and minimum number of nodes
     const nodeHeight = 30;
+    const rectWidth = 160; 
+
+    // Get the maximum and minimum number of nodes
     const maxNodes = Math.max(incomingNodes.size, outgoingNodes.size);
     const minNodes = Math.min(incomingNodes.size, outgoingNodes.size);
 
@@ -268,51 +296,49 @@ function createChart(container, data) {
 
     const yScaleMin = d3.scaleLinear()
         .domain([0, minNodes - 1])
-        .range([yScaleMax(0), yScaleMax(maxNodes - 1)]);  // Evenly distribute between the start and end of the larger side
+        .range([yScaleMax(0), yScaleMax(maxNodes - 1)]);
 
     // Map node ID to object
     const nodeMap = new Map();
 
-    // 处理转入节点
+    // Process incoming nodes
     [...incomingNodes].forEach((id, i) => {
         const yPosition = (incomingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
         const nodeData = data.nodes.find(n => n.id === id) || {};
         nodeMap.set(id + "_in", {id: id, x: 100, y: yPosition, group: 2, userName: nodeData.userName || ""});
     });
 
-    // 处理转出节点
+    // Process outgoing nodes
     [...outgoingNodes].forEach((id, i) => {
         const yPosition = (outgoingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
         const nodeData = data.nodes.find(n => n.id === id) || {};
         nodeMap.set(id + "_out", {id: id, x: innerWidth - 100, y: yPosition, group: 3, userName: nodeData.userName || ""});
     });
 
-    // 中心节点位置
+    // Center node position
     centerNode.x = innerWidth / 2;
     centerNode.y = innerHeight / 2;
     nodeMap.set(centerNode.id, centerNode);
 
-    // 修改节点绘制部分
+    // Modify node drawing part
     const node = svg.selectAll(".node")
         .data([...nodeMap.values()])
         .enter().append("g")
         .attr("class", d => `node ${d.group === 1 ? 'center' : ''}`)
         .attr("transform", d => `translate(${d.x},${d.y})`);
 
-    // 调整 rect 的宽度
-    const rectWidth = 180; // 增加宽度
     node.append("rect")
         .attr("width", rectWidth)
-        .attr("height", 30)
+        .attr("height", nodeHeight)
         .attr("x", d => d.group === 1 ? -rectWidth/2 : (d.group === 2 ? -rectWidth : 0))
-        .attr("y", -15)
+        .attr("y", -nodeHeight/2)
         .attr("fill", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke-width", 1)
-        .attr("rx", 4)
-        .attr("ry", 4)
-        .style("cursor", "pointer") // 添加鼠标指针样式
-        .on("click", function(event, d) { // 添加点击事件
+        .attr("rx", 3)
+        .attr("ry", 3)
+        .style("cursor", "pointer")
+        .on("click", function(event, d) {
             window.open(`https://minaexplorer.com/wallet/${d.id}`, '_blank','noopener','noreferrer');
         });
 
@@ -329,9 +355,10 @@ function createChart(container, data) {
                 return "black";
             }
             return "#fff";
-        });
+        })
+        .attr("font-size", "12px");
 
-    // 修改路径绘制部分
+    // Modify path drawing part
     const link = svg.selectAll(".link")
         .data(data.links)
         .enter().append("g")
@@ -347,26 +374,26 @@ function createChart(container, data) {
 
             if (d.type === "incoming") {
                 return `M${sourceNode.x},${sourceNode.y}
-                        L${midX - 10},${sourceNode.y}
+                        L${midX - 20},${sourceNode.y}
                         Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x - rectWidth/2},${targetNode.y}`;
             } else {
                 return `M${sourceNode.x + rectWidth/2},${sourceNode.y}
-                        Q${(sourceNode.x + midX) / 2},${targetNode.y} ${midX + 10},${targetNode.y}
+                        Q${(sourceNode.x + midX) / 2},${targetNode.y} ${midX + 20},${targetNode.y}
                         L${targetNode.x},${targetNode.y}`;
             }
         })
         .attr("fill", "none")
         .attr("stroke", d => d.type === "incoming" ? "#4CAF50" : "#2196F3")
-        .attr("stroke-width", 2)
+        .attr("stroke-width", 1.8)
         .attr("marker-end", d => `url(#arrow-${d.type})`);
 
-    // 添加交易信息标签
+    // Modify transaction info label
     link.append("text")
         .attr("class", "transaction-info")
-        .attr("dy", -10)
+        .attr("dy", -15) 
         .attr("text-anchor", "middle")
-        .attr("font-size", 10)
-        .attr("fill", "#666")
+        .attr("font-size", 12) 
+        .attr("fill", "#333") 
         .attr("transform", d => {
             const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
             const targetNode = d.type === "incoming" ? centerNode : nodeMap.get(d.target + "_out");
@@ -377,7 +404,7 @@ function createChart(container, data) {
         })
         .text(d => `${(d.value / 1e9).toFixed(4)} MINA`);
 
-    // 为每条路径添加一个不可见的路径，用于文本定位
+    // Add an invisible path for each link, used for text positioning
     link.append("path")
         .attr("id", (d, i) => `path-${i}`)
         .attr("d", d => {
@@ -397,5 +424,5 @@ function getAccountId(url) {
 
 // Helper function: format amount as a decimal number with 9 decimal places
 function formatAmount(amount) {
-    return (amount / 1e9).toFixed(9);  // Process as a decimal number with 9 decimal places
+    return (amount / 1e9).toFixed(9);
 }

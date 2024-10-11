@@ -55,6 +55,7 @@ For any questions or suggestions, please contact us through GitHub Issues.
 ## todo
 
 1. minaexplore
+    1. limit txs
     2. Add date display
     3. Add transaction count
 
