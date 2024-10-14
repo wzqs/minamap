@@ -20,6 +20,31 @@ document.getElementById('closeOverlay2').addEventListener('click', function () {
     dom.classList.remove('show');
 });
 
+document.getElementById('configureApiKey').addEventListener('click', function () {
+    let dom = document.getElementById('overlayApiKey');
+    dom.classList.add('show');
+    // 从 chrome.storage 中获取已保存的 API Key
+    chrome.storage.sync.get(['apiKey'], function(result) {
+        if (result.apiKey) {
+            document.getElementById('apiKeyInput').value = result.apiKey;
+        }
+    });
+});
+
+document.getElementById('closeOverlayApiKey').addEventListener('click', function () {
+    let dom = document.getElementById('overlayApiKey');
+    dom.classList.remove('show');
+});
+
+document.getElementById('saveApiKey').addEventListener('click', function () {
+    let apiKey = document.getElementById('apiKeyInput').value;
+    // 保存 API Key 到 chrome.storage
+    chrome.storage.sync.set({apiKey: apiKey}, function() {
+        console.log('API Key is saved');
+        // 关闭 overlay
+        document.getElementById('overlayApiKey').classList.remove('show');
+    });
+});
 
 // input 搜索
 const searchInput = document.querySelector('.search');
