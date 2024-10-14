@@ -1,8 +1,8 @@
-# Mina Explorer Extension
+# MinaMap
 
 ## Project Overview
 
-Mina Explorer Extension is a browser extension that enhances the functionality of blockchain explorers for the Mina protocol. This extension primarily targets supported websites such as minaexplorer.com and minascan.io, providing users with additional account analysis tools.
+MinaMap is a browser extension that enhances the functionality of blockchain explorers for the Mina protocol. This extension primarily targets supported websites such as minaexplorer.com and minascan.io, providing users with additional account analysis tools.
 
 ## Key Features
 
@@ -38,13 +38,7 @@ Mina Explorer Extension is a browser extension that enhances the functionality o
 
 ## Contribution Guidelines
 
-Suggestions and code contributions to the project are welcome. Please follow these steps:
-
-1. Fork this repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Create a Pull Request
+Suggestions and code contributions to the project are welcome. 
 
 
 ## Contact
