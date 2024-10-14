@@ -230,6 +230,28 @@ body {
     visibility: visible; /* 可见 */
 }
 
+#apiKeyInput {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+#saveApiKey {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#saveApiKey:hover {
+    background-color: #45a049;
+}
+
 .dropdown h4 {
     margin: 10px 0;
     padding-left: 15px;

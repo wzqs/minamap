@@ -1,4 +1,19 @@
-// Function executed when the page loads
+// Configuration
+const CONFIG = {
+    SUPPORTED_SITES: [
+        { regex: /^https:\/\/minaexplorer\.com\/wallet\/[a-zA-Z0-9]{55}$/ },
+        { regex: /^https:\/\/minascan\.io\/mainnet\/account\/[a-zA-Z0-9]{55}$/ }
+    ],
+    MAX_TX_LIMIT: 2500,
+    MAX_NODES: 28,
+    BUTTON_TEXT: 'Fund Flow',
+    BUTTON_STYLE: {
+        backgroundColor: '#7191FC'
+    },
+    CHART_CONTAINER_ID: 'flow-chart-container'
+};
+
+// Main function
 window.onload = function () {
     if (isSupportedSite(window.location.href)) {
         const accountOverviewElement = document.querySelector('h5.card-title') || document.querySelector('.TabSwitcher_tabSwitcher__PGC63');
@@ -8,16 +23,14 @@ window.onload = function () {
     }
 };
 
-// Check if the current URL is a supported site
-function isSupportedSite(url) {
-    const supportedSites = [
-        { regex: /^https:\/\/minaexplorer\.com\/wallet\/[a-zA-Z0-9]{55}$/ },
-        { regex: /^https:\/\/minascan\.io\/mainnet\/account\/[a-zA-Z0-9]{55}$/ }
-    ];
-    return supportedSites.some(site => site.regex.test(url));
-}
+// Utility functions
+const isSupportedSite = (url) => CONFIG.SUPPORTED_SITES.some(site => site.regex.test(url));
 
-// Set up the account overview section
+const getAccountId = (url) => url.split('/').pop();
+
+const formatAmount = (amount) => (amount / 1e9).toFixed(9);
+
+// DOM manipulation functions
 function setupAccountOverview(accountOverviewElement) {
     const container = createContainer(accountOverviewElement);
     const button = createButton();
@@ -28,7 +41,6 @@ function setupAccountOverview(accountOverviewElement) {
     adjustContainerWidth();
 }
 
-// Create a container for the account overview
 function createContainer(accountOverviewElement) {
     const container = document.createElement('div');
     container.classList.add('account-overview-container');
@@ -37,16 +49,26 @@ function createContainer(accountOverviewElement) {
     return container;
 }
 
-// Create the "Fund Flow" button
 function createButton() {
     const button = document.createElement('button');
-    button.innerText = 'Fund Flow';
+    button.innerText = CONFIG.BUTTON_TEXT;
     button.classList.add('fund-flow-button', 'layui-btn', 'layui-btn-sm', 'layui-btn-normal', 'layui-anim');
-    button.style.backgroundColor = '#7191FC';
+    Object.assign(button.style, CONFIG.BUTTON_STYLE);
     return button;
 }
 
-// Handle the button click event
+function adjustContainerWidth() {
+    $(document).ready(function () {
+        $('.table-responsive .table-striped tbody tr').each(function () {
+            $(this).find('th').each(function () {
+                var width = $(this).width();
+                $('.account-overview-container h5').css('width', width + 40 + 'px');
+            });
+        });
+    });
+}
+
+// Event handlers
 async function handleButtonClick() {
     const loadingIndex = layer.load(2, {
         shade: [0.5, '#000'],
@@ -57,26 +79,13 @@ async function handleButtonClick() {
     try {
         const accountUrl = window.location.href;
         const allData = await fetchTransactionData(accountUrl);
-
         generateFlowChart(allData);
     } finally {
         layer.closeAll("loading");
     }
 }
 
-// Adjust the container width based on the table
-function adjustContainerWidth() {
-    $(document).ready(function() {
-        $('.table-responsive .table-striped tbody tr').each(function() {
-            $(this).find('th').each(function() {
-                var width = $(this).width();
-                $('.account-overview-container h5').css('width', width + 40 + 'px');
-            });
-        });
-    });
-}
-
-// Fetch transaction data for the account
+// Data fetching and processing
 async function fetchTransactionData(accountUrl) {
     if (!accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
         throw new Error('unsupported site');
@@ -88,19 +97,13 @@ async function fetchTransactionData(accountUrl) {
     return processTransactionData(fullData);
 }
 
-// Fetch the number of transactions
 async function fetchTxNums(apiUrl) {
     const response = await fetch(`${apiUrl}?length=1`);
     const jsonData = await response.json();
     const totalTxs = jsonData.recordsTotal;
-
-    // Limit the number of transactions to 100
-    const MAX_TX_LIMIT = 2500;
-
-    return Math.min(totalTxs, MAX_TX_LIMIT);
+    return Math.min(totalTxs, CONFIG.MAX_TX_LIMIT);
 }
 
-// Fetch all transactions
 async function fetchAllTx(apiUrl, txNums) {
     const response = await fetch(`${apiUrl}?length=${txNums}`);
     if (!response.ok) {
@@ -109,17 +112,11 @@ async function fetchAllTx(apiUrl, txNums) {
     return response.json();
 }
 
-// Process the fetched transaction data
 function processTransactionData(data) {
     const accountId = getAccountId(window.location.href);
     const flowData = { incoming: new Map(), outgoing: new Map() };
 
     data.data.forEach(tx => {
-        // Process the transaction if it's a valid payment
-        // Conditions:
-        // 1. Transaction type is 'PAYMENT'
-        // 2. Amount is not zero
-        // 3. Sender and receiver are different
         if (tx.kind === 'PAYMENT' && tx.amount !== 0 && tx.from !== tx.to) {
             processTransaction(tx, accountId, flowData);
         }
@@ -128,18 +125,16 @@ function processTransactionData(data) {
     return flowData;
 }
 
-// Process a single transaction
 function processTransaction(tx, accountId, flowData) {
     const { amount, from, to, fromUserName, toUserName, memo } = tx;
     const isOutgoing = from === accountId;
     const targetMap = isOutgoing ? flowData.outgoing : flowData.incoming;
     const targetAddress = isOutgoing ? to : from;
     const userName = isOutgoing ? toUserName : fromUserName;
-    
+
     updateFlowData(targetMap, targetAddress, amount, userName, memo);
 }
 
-// Update the flow data with transaction information
 function updateFlowData(map, address, amount, userName, memo) {
     if (map.has(address)) {
         const existing = map.get(address);
@@ -157,95 +152,83 @@ function updateFlowData(map, address, amount, userName, memo) {
     }
 }
 
-// Generate the flow chart based on the processed data
+// Chart generation
 function generateFlowChart(flowData) {
-    // Create a new div element to contain the chart
-    const chartContainer = document.createElement('div');
-    chartContainer.id = 'flow-chart-container';
-    document.body.appendChild(chartContainer);
+    const chartContainer = createChartContainer();
+    addCloseButton(chartContainer);
 
-    // Create close button
-    var button = $('<button>', {
+    const { nodes, links } = prepareChartData(flowData);
+
+    if (nodes.length === 1 && links.length === 0) {
+        displayNoDataMessage(chartContainer);
+        return;
+    }
+
+    createChart(chartContainer, { nodes, links });
+}
+
+function createChartContainer() {
+    const container = document.createElement('div');
+    container.id = CONFIG.CHART_CONTAINER_ID;
+    document.body.appendChild(container);
+    return container;
+}
+
+function addCloseButton(container) {
+    const button = $('<button>', {
         type: 'button',
-        class: 'layui-btn  layui-btn-sm',
+        class: 'layui-btn layui-btn-sm',
         style: 'float: right;background-color: #7191FC',
         text: 'Close'
     });
-    // Add click event listener to the button
-    button.on('click', function() {
-        document.body.removeChild(chartContainer);
-    });
-    $('#flow-chart-container').append(button);
+    button.on('click', () => document.body.removeChild(container));
+    $(container).append(button);
+}
 
-    // Prepare chart data
+function prepareChartData(flowData) {
     const accountId = getAccountId(window.location.href);
     const nodes = [{ id: accountId, group: 1, userName: '' }];
     const links = [];
     const addedNodes = new Set([accountId]);
 
-    const MAX_NODES = 28;
+    processFlowDataMap(flowData.incoming, nodes, links, addedNodes, accountId, 2, "incoming");
+    processFlowDataMap(flowData.outgoing, nodes, links, addedNodes, accountId, 3, "outgoing");
 
-    if (flowData && typeof flowData === 'object') {
-        if (flowData.incoming && flowData.incoming instanceof Map) {
-            // limit the number of incoming nodes
-            const incomingEntries = Array.from(flowData.incoming.entries()).slice(0, MAX_NODES);
-            incomingEntries.forEach(([address, value]) => {
-                if (!addedNodes.has(address)) {
-                    nodes.push({ id: address, group: 2, userName: value.userName });
-                    addedNodes.add(address);
-                }
-                links.push({
-                    source: address,
-                    target: accountId,
-                    value: value.amount,
-                    userName: value.userName,
-                    memo: value.memo,
-                    date: "N/A",
-                    type: "incoming"
-                });
-            });
-        }
-
-        if (flowData.outgoing && flowData.outgoing instanceof Map) {
-            // limit the number of outgoing nodes
-            const outgoingEntries = Array.from(flowData.outgoing.entries()).slice(0, MAX_NODES);
-            outgoingEntries.forEach(([address, value]) => {
-                if (!addedNodes.has(address)) {
-                    nodes.push({ id: address, group: 3, userName: value.userName });
-                    addedNodes.add(address);
-                }
-                links.push({
-                    source: accountId,
-                    target: address,
-                    value: value.amount,
-                    userName: value.userName,
-                    memo: value.memo,
-                    date: "N/A",
-                    type: "outgoing"
-                });
-            });
-        }
-    }
-
-    console.log("Processed Links:", links);
-
-    // If there's no data, display a message
-    if (nodes.length === 1 && links.length === 0) {
-        const noDataMessage = document.createElement('p');
-        noDataMessage.textContent = 'No available transaction data';
-        chartContainer.appendChild(noDataMessage);
-        return;
-    }
-
-    // Create chart
-    createChart(chartContainer, { nodes, links });
+    return { nodes, links };
 }
 
-// Create the flow chart using D3.js
+function processFlowDataMap(dataMap, nodes, links, addedNodes, accountId, group, type) {
+    if (dataMap && dataMap instanceof Map) {
+        const entries = Array.from(dataMap.entries()).slice(0, CONFIG.MAX_NODES);
+        entries.forEach(([address, value]) => {
+            if (!addedNodes.has(address)) {
+                nodes.push({ id: address, group: group, userName: value.userName });
+                addedNodes.add(address);
+            }
+            links.push({
+                source: type === "incoming" ? address : accountId,
+                target: type === "incoming" ? accountId : address,
+                value: value.amount,
+                userName: value.userName,
+                memo: value.memo,
+                date: "N/A",
+                type: type
+            });
+        });
+    }
+}
+
+function displayNoDataMessage(container) {
+    const noDataMessage = document.createElement('p');
+    noDataMessage.textContent = 'No available transaction data';
+    container.appendChild(noDataMessage);
+}
+
+// D3.js chart creation (unchanged)
 function createChart(container, data) {
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = {top: 50, right: 120, bottom: 100, left: 120};
+    const margin = { top: 50, right: 120, bottom: 100, left: 120 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -283,7 +266,7 @@ function createChart(container, data) {
     const centerNode = data.nodes.find(n => n.group === 1);
 
     const nodeHeight = 30;
-    const rectWidth = 160; 
+    const rectWidth = 160;
 
     // Get the maximum and minimum number of nodes
     const maxNodes = Math.max(incomingNodes.size, outgoingNodes.size);
@@ -305,14 +288,14 @@ function createChart(container, data) {
     [...incomingNodes].forEach((id, i) => {
         const yPosition = (incomingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
         const nodeData = data.nodes.find(n => n.id === id) || {};
-        nodeMap.set(id + "_in", {id: id, x: 100, y: yPosition, group: 2, userName: nodeData.userName || ""});
+        nodeMap.set(id + "_in", { id: id, x: 100, y: yPosition, group: 2, userName: nodeData.userName || "" });
     });
 
     // Process outgoing nodes
     [...outgoingNodes].forEach((id, i) => {
         const yPosition = (outgoingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
         const nodeData = data.nodes.find(n => n.id === id) || {};
-        nodeMap.set(id + "_out", {id: id, x: innerWidth - 100, y: yPosition, group: 3, userName: nodeData.userName || ""});
+        nodeMap.set(id + "_out", { id: id, x: innerWidth - 100, y: yPosition, group: 3, userName: nodeData.userName || "" });
     });
 
     // Center node position
@@ -330,22 +313,22 @@ function createChart(container, data) {
     node.append("rect")
         .attr("width", rectWidth)
         .attr("height", nodeHeight)
-        .attr("x", d => d.group === 1 ? -rectWidth/2 : (d.group === 2 ? -rectWidth : 0))
-        .attr("y", -nodeHeight/2)
+        .attr("x", d => d.group === 1 ? -rectWidth / 2 : (d.group === 2 ? -rectWidth : 0))
+        .attr("y", -nodeHeight / 2)
         .attr("fill", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke-width", 1)
         .attr("rx", 3)
         .attr("ry", 3)
         .style("cursor", "pointer")
-        .on("click", function(event, d) {
-            window.open(`https://minaexplorer.com/wallet/${d.id}`, '_blank','noopener','noreferrer');
+        .on("click", function (event, d) {
+            window.open(`https://minaexplorer.com/wallet/${d.id}`, '_blank', 'noopener', 'noreferrer');
         });
 
     node.append("text")
         .attr("dy", ".35em")
         .attr("text-anchor", "middle")
-        .attr("x", d => d.group === 2 ? -rectWidth/2 : (d.group === 3 ? rectWidth/2 : 0))
+        .attr("x", d => d.group === 2 ? -rectWidth / 2 : (d.group === 3 ? rectWidth / 2 : 0))
         .text(d => {
             const displayName = d.userName ? ` ${d.userName}` : '';
             return `${displayName} (${d.id.slice(-4)})`;
@@ -375,9 +358,9 @@ function createChart(container, data) {
             if (d.type === "incoming") {
                 return `M${sourceNode.x},${sourceNode.y}
                         L${midX - 20},${sourceNode.y}
-                        Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x - rectWidth/2},${targetNode.y}`;
+                        Q${(midX + targetNode.x) / 2},${sourceNode.y} ${targetNode.x - rectWidth / 2},${targetNode.y}`;
             } else {
-                return `M${sourceNode.x + rectWidth/2},${sourceNode.y}
+                return `M${sourceNode.x + rectWidth / 2},${sourceNode.y}
                         Q${(sourceNode.x + midX) / 2},${targetNode.y} ${midX + 20},${targetNode.y}
                         L${targetNode.x},${targetNode.y}`;
             }
@@ -390,10 +373,10 @@ function createChart(container, data) {
     // Modify transaction info label
     link.append("text")
         .attr("class", "transaction-info")
-        .attr("dy", -15) 
+        .attr("dy", -5)
         .attr("text-anchor", "middle")
-        .attr("font-size", 12) 
-        .attr("fill", "#333") 
+        .attr("font-size", 10)
+        .attr("fill", "#333")
         .attr("transform", d => {
             const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
             const targetNode = d.type === "incoming" ? centerNode : nodeMap.get(d.target + "_out");
@@ -414,15 +397,4 @@ function createChart(container, data) {
         })
         .attr("fill", "none")
         .attr("stroke", "none");
-}
-
-// Extract account ID from URL
-function getAccountId(url) {
-    const parts = url.split('/');
-    return parts[parts.length - 1];
-}
-
-// Helper function: format amount as a decimal number with 9 decimal places
-function formatAmount(amount) {
-    return (amount / 1e9).toFixed(9);
 }
