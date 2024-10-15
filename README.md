@@ -49,19 +49,18 @@ For any questions or suggestions, please contact us through GitHub Issues.
 ## todo
 
 1. minaexplore
-    1. limit txs
+    1. limit txs (done)
     2. Add date display
     3. Add transaction count
 
 2. Support minascan
-    1. Support user input of their own API key
-    2. API key configuration in plugin interface, provide editing functionality, display with asterisks
+    1. Support user input of their own API key (done)
+    2. API key configuration in plugin interface, provide editing functionality, display with asterisks (done)
     3. Interface consistent with minaexplore display
 
-3. **Customizable Settings**: Allows users to customize the extension's functionality and appearance.
 
-4. **Phishing Address Warning**: Adds a warning when users visit websites that may be phishing sites.
+3. **Phishing Address Warning**: Adds a warning when users visit websites that may be phishing sites.
 
-5. **Phishing Website Warning**: Adds a warning when users visit websites that may be phishing sites.
+4. **Phishing Website Warning**: Adds a warning when users visit websites that may be phishing sites.
 
 

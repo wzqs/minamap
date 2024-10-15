@@ -97,3 +97,24 @@ document.addEventListener('click', function(event) {
         dropdown.classList.remove('show');
     }
 });
+
+// 添加彩蛋功能
+let clickCount = 0;
+let lastClickTime = 0;
+const versionElement = document.querySelector('.version');
+
+versionElement.addEventListener('click', function(event) {
+    const currentTime = new Date().getTime();
+    if (currentTime - lastClickTime > 1000) {
+        // 如果两次点击间隔超过1秒，重置计数
+        clickCount = 0;
+    }
+    clickCount++;
+    lastClickTime = currentTime;
+
+    if (clickCount === 6) {
+        // 连续点击6次，打开新窗口
+        window.open('https://minaexplorer.com/wallet/B62qn7KLcjFRqNhnUngn2iky62Lq4E8G2t66KdFKTdeJUzwoEkPsSmJ/delegations', '_blank,noopener,noreferrer');
+        clickCount = 0; // 重置计数
+    }
+});
