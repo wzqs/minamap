@@ -38,7 +38,7 @@ MinaMap is a browser extension that enhances the functionality of blockchain exp
 - minaexplorer.com
 - minascan.io
 
-## Contribution Guidelines
+## Contribution
 
 Suggestions and code contributions to the project are welcome. 
 
