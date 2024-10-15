@@ -4,6 +4,8 @@
 
 MinaMap is a browser extension that enhances the functionality of blockchain explorers for the Mina protocol. This extension primarily targets supported websites such as minaexplorer.com and minascan.io, providing users with additional account analysis tools.
 
+<img width="2093" alt="image" src="https://github.com/user-attachments/assets/45a67f30-ae45-40db-8504-e54490caac60">
+
 ## Key Features
 
 1. **Fund Flow Visualization**: Adds a "Fund Flow" button to supported blockchain explorer pages, which generates a fund flow chart for the account when clicked.
