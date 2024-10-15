@@ -236,16 +236,22 @@ body {
     margin-bottom: 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
+    box-sizing: border-box;
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 #saveApiKey {
     background-color: #4CAF50;
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 8px 15px;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
+    font-size: 12px;
+    float: right;
+    margin-top: 10px;
 }
 
 #saveApiKey:hover {
