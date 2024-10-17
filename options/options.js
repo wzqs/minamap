@@ -114,7 +114,7 @@ versionElement.addEventListener('click', function(event) {
 
     if (clickCount === 6) {
         // 连续点击6次，打开新窗口
-        window.open('https://minaexplorer.com/wallet/B62qn7KLcjFRqNhnUngn2iky62Lq4E8G2t66KdFKTdeJUzwoEkPsSmJ/delegations', '_blank,noopener,noreferrer');
+        window.open('https://minascan.io/mainnet/validator/B62qn7KLcjFRqNhnUngn2iky62Lq4E8G2t66KdFKTdeJUzwoEkPsSmJ/delegations', '_blank,noopener,noreferrer');
         clickCount = 0; // 重置计数
     }
 });
