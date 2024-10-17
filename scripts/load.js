@@ -177,8 +177,7 @@ function createChartContainer() {
 function addCloseButton(container) {
     const button = $('<button>', {
         type: 'button',
-        class: 'layui-btn layui-btn-sm',
-        style: 'float: right;background-color: #7191FC',
+        class: 'close-button',
         text: 'Close'
     });
     button.on('click', () => document.body.removeChild(container));
