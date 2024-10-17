@@ -44,11 +44,11 @@
     box-shadow: none;
     z-index: 1000;
     overflow: hidden;
-    padding: 10px;
-    box-sizing: border-box;
+    padding: 10px; 
+    box-sizing: border-box; 
 }
 
-/* close button styles */
+/* close button styles*/
 .close-button {
     position: absolute;
     top: 3px;

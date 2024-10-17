@@ -5,7 +5,7 @@ const CONFIG = {
         { regex: /^https:\/\/minascan\.io\/mainnet\/account\/[a-zA-Z0-9]{55}$/ }
     ],
     MAX_TX_LIMIT: 2500,
-    MAX_NODES: 28,
+    MAX_NODES: 40,
     BUTTON_TEXT: 'Fund Flow',
     BUTTON_STYLE: {
         backgroundColor: '#7191FC'
@@ -227,19 +227,31 @@ function displayNoDataMessage(container) {
 function createChart(container, data) {
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = { top: 50, right: 120, bottom: 100, left: 120 };
+    const margin = { top: 30, right: 100, bottom: 30, left: 100 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
     const svg = d3.select(container)
         .append("svg")
-        .attr("width", "100%") // Change to percentage
-        .attr("height", "100%") // Change to percentage
-        .append("g")
+        .attr("width", "100%")
+        .attr("height", "100%");
+
+    // Add zoom functionality
+    const zoom = d3.zoom()
+        .scaleExtent([0.1, 10])
+        .on("zoom", zoomed);
+
+    svg.call(zoom);
+
+    const g = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Define arrow
-    svg.append("defs").selectAll("marker")
+    function zoomed(event) {
+        g.attr("transform", event.transform);
+    }
+
+    // Define arrows
+    g.append("defs").selectAll("marker")
         .data(["incoming", "outgoing"])
         .enter().append("marker")
         .attr("id", d => `arrow-${d}`)
@@ -253,57 +265,61 @@ function createChart(container, data) {
         .attr("fill", d => d === "incoming" ? "#4CAF50" : "#2196F3")
         .attr("d", "M0,-5L10,0L0,5");
 
-    // Separate incoming and outgoing nodes, and handle cases with both incoming and outgoing
+    // Separate incoming and outgoing nodes, and handle nodes with both incoming and outgoing transactions
     const incomingNodes = new Set(data.links.filter(l => l.type === "incoming").map(l => l.source));
     const outgoingNodes = new Set(data.links.filter(l => l.type === "outgoing").map(l => l.target));
 
-    // Create a set to store addresses that are both incoming and outgoing  
+    // Create a set to store addresses with both incoming and outgoing transactions
     const bothInAndOut = new Set(
         [...incomingNodes].filter(node => outgoingNodes.has(node))
     );
 
     const centerNode = data.nodes.find(n => n.group === 1);
 
-    const nodeHeight = 30;
-    const rectWidth = 160;
+    const nodeHeight = 20; 
+    const rectWidth = 120; 
 
-    // Get the maximum and minimum number of nodes
+    // Get maximum and minimum number of nodes
     const maxNodes = Math.max(incomingNodes.size, outgoingNodes.size);
     const minNodes = Math.min(incomingNodes.size, outgoingNodes.size);
 
     // Calculate scale
     const yScaleMax = d3.scaleLinear()
         .domain([0, maxNodes - 1])
-        .range([nodeHeight, innerHeight - nodeHeight]);
+        .range([nodeHeight / 2, innerHeight - nodeHeight / 2]);
 
     const yScaleMin = d3.scaleLinear()
         .domain([0, minNodes - 1])
         .range([yScaleMax(0), yScaleMax(maxNodes - 1)]);
 
-    // Map node ID to object
+    // Map node IDs to objects
     const nodeMap = new Map();
 
-    // Process incoming nodes
+    const leftNodeX = margin.left;
+    const rightNodeX = innerWidth - margin.right;
+    const centerNodeX = innerWidth / 2;
+
+    // Handle incoming nodes
     [...incomingNodes].forEach((id, i) => {
         const yPosition = (incomingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
         const nodeData = data.nodes.find(n => n.id === id) || {};
-        nodeMap.set(id + "_in", { id: id, x: 100, y: yPosition, group: 2, userName: nodeData.userName || "" });
+        nodeMap.set(id + "_in", { id: id, x: leftNodeX, y: yPosition, group: 2, userName: nodeData.userName || "" });
     });
 
-    // Process outgoing nodes
+    // Handle outgoing nodes
     [...outgoingNodes].forEach((id, i) => {
         const yPosition = (outgoingNodes.size === maxNodes) ? yScaleMax(i) : yScaleMin(i);
         const nodeData = data.nodes.find(n => n.id === id) || {};
-        nodeMap.set(id + "_out", { id: id, x: innerWidth - 100, y: yPosition, group: 3, userName: nodeData.userName || "" });
+        nodeMap.set(id + "_out", { id: id, x: rightNodeX, y: yPosition, group: 3, userName: nodeData.userName || "" });
     });
 
     // Center node position
-    centerNode.x = innerWidth / 2;
+    centerNode.x = centerNodeX;
     centerNode.y = innerHeight / 2;
     nodeMap.set(centerNode.id, centerNode);
 
-    // Modify node drawing part
-    const node = svg.selectAll(".node")
+    // Draw nodes
+    const node = g.selectAll(".node")
         .data([...nodeMap.values()])
         .enter().append("g")
         .attr("class", d => `node ${d.group === 1 ? 'center' : ''}`)
@@ -317,8 +333,8 @@ function createChart(container, data) {
         .attr("fill", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke", d => d.group === 1 ? "#FFB800" : (d.group === 2 ? "#5FB878" : "#1E9FFF"))
         .attr("stroke-width", 1)
-        .attr("rx", 3)
-        .attr("ry", 3)
+        .attr("rx", 2)
+        .attr("ry", 2)
         .style("cursor", "pointer")
         .on("click", function (event, d) {
             window.open(`https://minaexplorer.com/wallet/${d.id}`, '_blank', 'noopener', 'noreferrer');
@@ -338,10 +354,10 @@ function createChart(container, data) {
             }
             return "#fff";
         })
-        .attr("font-size", "12px");
+        .attr("font-size", "10px");
 
-    // Modify path drawing part
-    const link = svg.selectAll(".link")
+    // Draw paths
+    const link = g.selectAll(".link")
         .data(data.links)
         .enter().append("g")
         .attr("class", "link-group");
@@ -369,12 +385,12 @@ function createChart(container, data) {
         .attr("stroke-width", 1.8)
         .attr("marker-end", d => `url(#arrow-${d.type})`);
 
-    // Modify transaction info label
+    // Modify transaction information labels
     link.append("text")
         .attr("class", "transaction-info")
-        .attr("dy", -5)
+        .attr("dy", -3)
         .attr("text-anchor", "middle")
-        .attr("font-size", 10)
+        .attr("font-size", 8)
         .attr("fill", "#333")
         .attr("transform", d => {
             const sourceNode = d.type === "incoming" ? nodeMap.get(d.source + "_in") : centerNode;
@@ -384,9 +400,9 @@ function createChart(container, data) {
             const y = d.type === "incoming" ? sourceNode.y : targetNode.y;
             return `translate(${x}, ${y})`;
         })
-        .text(d => `${(d.value / 1e9).toFixed(4)} MINA`);
+        .text(d => `${(d.value / 1e9).toFixed(8)} MINA`);
 
-    // Add an invisible path for each link, used for text positioning
+    // Add an invisible path for each link for text positioning
     link.append("path")
         .attr("id", (d, i) => `path-${i}`)
         .attr("d", d => {
