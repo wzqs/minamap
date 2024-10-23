@@ -2,15 +2,18 @@
 const CONFIG = {
     SUPPORTED_SITES: [
         { regex: /^https:\/\/minaexplorer\.com\/wallet\/[a-zA-Z0-9]{55}$/ },
-        { regex: /^https:\/\/minascan\.io\/mainnet\/account\/[a-zA-Z0-9]{55}$/ }
+        { regex: /^https:\/\/minascan\.io\/mainnet\/account/ }
     ],
     MAX_TX_LIMIT: 2500,
-    MAX_NODES: 40,
+    MAX_NODES: 35,
     BUTTON_TEXT: 'Fund Flow',
     BUTTON_STYLE: {
         backgroundColor: '#7191FC'
     },
-    CHART_CONTAINER_ID: 'flow-chart-container'
+    CHART_CONTAINER_ID: 'flow-chart-container',
+    MINAEXPLORER_API: 'https://api.minaexplorer.com',
+    MINASCAN_API: 'https://api.blockberry.one/mina-mainnet',
+    APIKEY: ''
 };
 
 // Main function
@@ -26,9 +29,12 @@ window.onload = function () {
 // Utility functions
 const isSupportedSite = (url) => CONFIG.SUPPORTED_SITES.some(site => site.regex.test(url));
 
-const getAccountId = (url) => url.split('/').pop();
+const getAccountId = (url) => {
+    const accountRegex = /(?:account|wallet)\/([A-Za-z0-9]{55})/;
+    const match = url.match(accountRegex);
+    return match?.[1];
+};
 
-const formatAmount = (amount) => (amount / 1e9).toFixed(9);
 
 // DOM manipulation functions
 function setupAccountOverview(accountOverviewElement) {
@@ -87,15 +93,62 @@ async function handleButtonClick() {
 
 // Data fetching and processing
 async function fetchTransactionData(accountUrl) {
-    if (!accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
-        throw new Error('unsupported site');
+    if (accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
+        return fetchMinaExplorerData(accountUrl);
+    } else if (accountUrl.startsWith('https://minascan.io/mainnet/account/')) {
+        return fetchMinascanData(accountUrl);
+    } else {
+        throw new Error('Unsupported site');
     }
-
-    const apiUrl = `https://minaexplorer.com/all-transactions/${getAccountId(accountUrl)}`;
-    const txNums = await fetchTxNums(apiUrl);
-    const fullData = await fetchAllTx(apiUrl, txNums);
-    return processTransactionData(fullData);
 }
+
+// minascan
+async function fetchMinascanData(accountUrl) {
+    const apiUrl = CONFIG.MINASCAN_API + `/v1/accounts/${getAccountId(accountUrl)}`;
+    const txNums = await fetchTxNumsV1(apiUrl);
+    const fullData = await fetchAllTxV1(apiUrl, txNums);
+
+}
+
+async function fetchTxNumsV1(apiUrl) {
+    const response = await fetch(`${apiUrl}/txs?page=0&size=1&orderBy=DESC&sortBy=AGE&direction=ALL`, {
+        headers: {
+            'X-API-KEY': CONFIG.APIKEY
+        }
+    });
+    const data = await response.json();
+    const totalTxs = data.totalElements;
+    console.log("xxxdata", totalTxs);
+    return totalTxs;
+}
+
+async function fetchAllTxV1(apiUrl, txNums) {
+    const response = await fetch(`${apiUrl}/txs?page=0&size=${txNums}&orderBy=DESC&sortBy=AGE&direction=ALL`);
+    const data = await response.json();
+    return data;
+}
+
+// minaexplorer 
+async function fetchMinaExplorerData(accountUrl) {
+    const accountId = getAccountId(accountUrl);
+    const apiUrl = `${CONFIG.MINAEXPLORER_API}/accounts/${accountId}`;
+    const accountInfo = await fetchAccountInfo(apiUrl);
+    const txApiUrl = `https://minaexplorer.com/all-transactions/${accountId}`;
+    const txNums = await fetchTxNums(txApiUrl);
+    const fullData = await fetchAllTx(txApiUrl, txNums);
+    return processTransactionData(fullData, accountInfo);
+}
+
+async function fetchAccountInfo(apiUrl) {
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+        throw new Error('network response not ok');
+    }
+    const data = await response.json();
+    console.log("accountInfo", data);
+    return data;
+}
+
 
 async function fetchTxNums(apiUrl) {
     const response = await fetch(`${apiUrl}?length=1`);
@@ -112,9 +165,15 @@ async function fetchAllTx(apiUrl, txNums) {
     return response.json();
 }
 
-function processTransactionData(data) {
+function processTransactionData(data, accountInfo) {
     const accountId = getAccountId(window.location.href);
-    const flowData = { incoming: new Map(), outgoing: new Map() };
+    const flowData = {
+        incoming: new Map(), outgoing: new Map(), centerNodeInfo: {
+            id: accountId,
+            userName: accountInfo.account.username || '',
+            isCoinbaseReceiver: accountInfo.account.totalBlocks > 0
+        }
+    };
 
     data.data.forEach(tx => {
         if (tx.kind === 'PAYMENT' && tx.amount !== 0 && tx.from !== tx.to) {
@@ -139,13 +198,13 @@ function updateFlowData(map, address, amount, userName, memo) {
     if (map.has(address)) {
         const existing = map.get(address);
         map.set(address, {
-            amount: existing.amount + amount,
+            amount: existing.amount + BigInt(amount),
             userName: userName || "Unknown",
             memo: existing.memo || memo || ""
         });
     } else {
         map.set(address, {
-            amount: amount,
+            amount: BigInt(amount),
             userName: userName || "Unknown",
             memo: memo || ""
         });
@@ -185,13 +244,19 @@ function addCloseButton(container) {
 }
 
 function prepareChartData(flowData) {
-    const accountId = getAccountId(window.location.href);
-    const nodes = [{ id: accountId, group: 1, userName: '' }];
+    const { centerNodeInfo } = flowData;
+    const nodes = [{
+        id: centerNodeInfo.id,
+        group: 1,
+        userName: centerNodeInfo.userName,
+        isCoinbaseReceiver: centerNodeInfo.isCoinbaseReceiver
+    }];
+    console.log("centerNodeInfo", nodes);
     const links = [];
-    const addedNodes = new Set([accountId]);
+    const addedNodes = new Set([centerNodeInfo.id]);
 
-    processFlowDataMap(flowData.incoming, nodes, links, addedNodes, accountId, 2, "incoming");
-    processFlowDataMap(flowData.outgoing, nodes, links, addedNodes, accountId, 3, "outgoing");
+    processFlowDataMap(flowData.incoming, nodes, links, addedNodes, centerNodeInfo.id, 2, "incoming");
+    processFlowDataMap(flowData.outgoing, nodes, links, addedNodes, centerNodeInfo.id, 3, "outgoing");
 
     return { nodes, links };
 }
@@ -276,8 +341,8 @@ function createChart(container, data) {
 
     const centerNode = data.nodes.find(n => n.group === 1);
 
-    const nodeHeight = 20; 
-    const rectWidth = 120; 
+    const nodeHeight = 20;
+    const rectWidth = 120;
 
     // Get maximum and minimum number of nodes
     const maxNodes = Math.max(incomingNodes.size, outgoingNodes.size);
@@ -346,7 +411,10 @@ function createChart(container, data) {
         .attr("x", d => d.group === 2 ? -rectWidth / 2 : (d.group === 3 ? rectWidth / 2 : 0))
         .text(d => {
             const displayName = d.userName ? ` ${d.userName}` : '';
-            return `${displayName} (${d.id.slice(-4)})`;
+            const coinbaseLabel = d.group === 1 && d.isCoinbaseReceiver ? '(coinbase_receiver)' : '';
+            return d.group === 1
+                ? `${displayName}${coinbaseLabel}`
+                : `${displayName} (${d.id.slice(-4)})`;
         })
         .attr("fill", d => {
             if (d.group !== 1 && bothInAndOut.has(d.id)) {
@@ -400,7 +468,10 @@ function createChart(container, data) {
             const y = d.type === "incoming" ? sourceNode.y : targetNode.y;
             return `translate(${x}, ${y})`;
         })
-        .text(d => `${(d.value / 1e9).toFixed(8)} MINA`);
+        .text(d => {
+            const amountInMina = Number(d.value) / 1e9;
+            return `${amountInMina.toFixed(8)} MINA`;
+        });
 
     // Add an invisible path for each link for text positioning
     link.append("path")
@@ -413,3 +484,4 @@ function createChart(container, data) {
         .attr("fill", "none")
         .attr("stroke", "none");
 }
+
