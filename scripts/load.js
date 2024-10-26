@@ -13,7 +13,6 @@ const CONFIG = {
     CHART_CONTAINER_ID: 'flow-chart-container',
     MINAEXPLORER_API: 'https://api.minaexplorer.com',
     MINASCAN_API: 'https://api.blockberry.one/mina-mainnet',
-    APIKEY: ''
 };
 
 // Main function
@@ -28,6 +27,19 @@ window.onload = function () {
 
 // Utility functions
 const isSupportedSite = (url) => CONFIG.SUPPORTED_SITES.some(site => site.regex.test(url));
+
+// get api key from storage
+function getApiKeyFromStorage() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.sync.get(['apiKey'], function(result) {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(result.apiKey || '');
+            }
+        });
+    });
+}
 
 const getAccountId = (url) => {
     const accountRegex = /(?:account|wallet)\/([A-Za-z0-9]{55})/;
@@ -111,9 +123,10 @@ async function fetchMinascanData(accountUrl) {
 }
 
 async function fetchTxNumsV1(apiUrl) {
+    const apiKey = await getApiKeyFromStorage();
     const response = await fetch(`${apiUrl}/txs?page=0&size=1&orderBy=DESC&sortBy=AGE&direction=ALL`, {
         headers: {
-            'X-API-KEY': CONFIG.APIKEY
+            'X-API-KEY': apiKey
         }
     });
     const data = await response.json();
