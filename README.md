@@ -69,3 +69,13 @@ For any questions or suggestions, please contact us through GitHub Issues.
 1. **Phishing Address Warning**: Add suspicious address warning functionality
 2. **Phishing Website Warning**: Add suspicious website warning functionality
 3. **Enhanced Data Analysis**: Add more data analysis dimensions
+
+## Acknowledgements
+
+We would like to express our sincere gratitude to:
+
+- **Mina Foundation** - For their support and development of the Mina Protocol
+- **MinaScan** - For providing comprehensive blockchain explorer services and API support
+- **MinaExplorer** - For their excellent blockchain explorer platform and API services
+
+These organizations have made significant contributions to the Mina ecosystem and made this project possible.
