@@ -1,6 +1,3 @@
-# minamap
-mina fund flow - chrome extension
-=======
 # MinaMap
 
 ## Project Overview
