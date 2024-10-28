@@ -1,0 +1,71 @@
+/* styles.css */
+/* Account overview container */
+.account-overview-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Custom loading animation color */
+.layui-layer-loading-2::after {
+    border-color: #7191FC !important;
+}
+
+/* Link style for flow chart */
+.link {
+    stroke-opacity: 0.6;
+}
+
+/* Prevent text selection on nodes */
+.node text {
+    pointer-events: none;
+}
+
+/* Prevent interaction with transaction info and date */
+.transaction-info,
+.transaction-date {
+    pointer-events: none;
+}
+
+/* Adjust arrow size */
+#arrow-incoming,
+#arrow-outgoing {
+    transform: scale(1.5);
+}
+
+/* Flow chart container styles */
+#flow-chart-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: 1000;
+    overflow: hidden;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* close button styles*/
+.close-button {
+    position: absolute;
+    top: 3px;
+    right: 20px;
+    z-index: 1001;
+    background-color: #7191FC;
+    color: white;
+    border: none;
+    padding: 3px 8px;
+    ;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.close-button:hover {
+    background-color: #5A73C7;
+}
