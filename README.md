@@ -6,24 +6,31 @@ MinaMap is a browser extension that enhances the functionality of blockchain exp
 
 <img width="2093" alt="image" src="https://github.com/user-attachments/assets/45a67f30-ae45-40db-8504-e54490caac60">
 
-## Key Features
+## Core Features
 
-1. **Fund Flow Visualization**: Adds a "Fund Flow" button to supported blockchain explorer pages, which generates a fund flow chart for the account when clicked.
+1. **Fund Flow Visualization**
+   - Adds a "Fund Flow" button to supported blockchain explorer pages
+   - Generates fund flow charts upon button click
+   - Supports analysis of up to 2500 transactions
+   - Displays up to 35 related nodes
 
-2. **Transaction Data Analysis**: Automatically retrieves and processes the account's transaction history, distinguishing between incoming and outgoing transactions.
+2. **Transaction Data Analysis**
+   - Automatically fetches and processes account transaction history
+   - Distinguishes between incoming and outgoing transactions
+   - Supports parallel processing of large transaction datasets
+   - Automatically merges multiple transactions from the same address
 
-3. **Interactive Chart**: Creates an interactive fund flow chart using D3.js, visually representing the transaction relationships between the account and other addresses.
+3. **Interactive Chart**
+   - Creates visualizations using D3.js
+   - Supports zoom and drag operations
+   - Displays transaction amounts and address information
+   - Clickable nodes that redirect to corresponding address pages
+   - Uses different colors to distinguish incoming/outgoing relationships
 
-4. **Account Search**: Provides an account address search function in the extension's options page, supporting result viewing across multiple blockchain explorers.
+4. **Multi-Platform Support**
+   - Supports MinaExplorer API
+   - Supports Minascan API (API key configuration)
 
-
-## Technical Highlights
-
-- Developed using native JavaScript/html/css to ensure high performance and compatibility
-- Utilizes the D3.js library to create complex data visualization charts
-- Implements asynchronous data fetching and processing for improved user experience
-- Adopts a modular design for easy maintenance and extensibility
-- Integrates the layui framework for attractive UI components
 
 ## Installation and Usage
 
@@ -31,7 +38,13 @@ MinaMap is a browser extension that enhances the functionality of blockchain exp
 2. Open the extension management page in Chrome (chrome://extensions/)
 3. Enable "Developer mode"
 4. Click "Load unpacked" and select the project folder
-5. Visit supported blockchain explorer websites to use the new features
+5. For Minascan API access:
+   - Register at https://api.blockberry.one
+   - Create your API key after login
+   - You can request unlimited API access by submitting feedback
+   - Configure the API key in the extension settings
+   - Save and Refresh the current page after API key configuration
+6. Visit supported blockchain explorer websites to use the new features
 
 ## Supported Websites
 
@@ -40,7 +53,10 @@ MinaMap is a browser extension that enhances the functionality of blockchain exp
 
 ## Contribution
 
-Suggestions and code contributions to the project are welcome. 
+We welcome contributions through:
+- Submitting issues for bug reports
+- Creating pull requests for code contributions
+- Improving documentation
 
 
 ## Contact
@@ -48,21 +64,10 @@ Suggestions and code contributions to the project are welcome.
 For any questions or suggestions, please contact us through GitHub Issues.
 
 
-## todo
+## Future Plans
 
-1. minaexplore
-    1. limit txs (done)
-    2. Add date display
-    3. Add transaction count
-
-2. Support minascan
-    1. Support user input of their own API key (done)
-    2. API key configuration in plugin interface, provide editing functionality, display with asterisks (done)
-    3. Interface consistent with minaexplore display
-
-
-3. **Phishing Address Warning**: Adds a warning when users visit websites that may be phishing sites.
-
-4. **Phishing Website Warning**: Adds a warning when users visit websites that may be phishing sites.
+1. **Phishing Address Warning**: Add suspicious address warning functionality
+2. **Phishing Website Warning**: Add suspicious website warning functionality
+3. **Enhanced Data Analysis**: Add more data analysis dimensions
 
 

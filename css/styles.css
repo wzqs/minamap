@@ -22,12 +22,14 @@
 }
 
 /* Prevent interaction with transaction info and date */
-.transaction-info, .transaction-date {
+.transaction-info,
+.transaction-date {
     pointer-events: none;
 }
 
 /* Adjust arrow size */
-#arrow-incoming, #arrow-outgoing {
+#arrow-incoming,
+#arrow-outgoing {
     transform: scale(1.5);
 }
 
@@ -44,8 +46,8 @@
     box-shadow: none;
     z-index: 1000;
     overflow: hidden;
-    padding: 10px; 
-    box-sizing: border-box; 
+    padding: 10px;
+    box-sizing: border-box;
 }
 
 /* close button styles*/
@@ -57,7 +59,8 @@
     background-color: #7191FC;
     color: white;
     border: none;
-    padding: 3px 8px;;
+    padding: 3px 8px;
+    ;
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;

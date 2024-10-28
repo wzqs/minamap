@@ -24,7 +24,7 @@ document.getElementById('configureApiKey').addEventListener('click', function ()
     let dom = document.getElementById('overlayApiKey');
     dom.classList.add('show');
     // 从 chrome.storage 中获取已保存的 API Key
-    chrome.storage.sync.get(['apiKey'], function(result) {
+    chrome.storage.sync.get(['apiKey'], function (result) {
         if (result.apiKey) {
             document.getElementById('apiKeyInput').value = result.apiKey;
         }
@@ -38,25 +38,25 @@ document.getElementById('closeOverlayApiKey').addEventListener('click', function
 
 document.getElementById('saveApiKey').addEventListener('click', function () {
     let apiKey = document.getElementById('apiKeyInput').value;
-    // 保存 API Key 到 chrome.storage
-    chrome.storage.sync.set({apiKey: apiKey}, function() {
+    // save api key to chrome.storage
+    chrome.storage.sync.set({ apiKey: apiKey }, function () {
         console.log('API Key is saved');
-        // 关闭 overlay
+        // close overlay
         document.getElementById('overlayApiKey').classList.remove('show');
     });
 });
 
-// input 搜索
+// input search
 const searchInput = document.querySelector('.search');
 const dropdown = document.getElementById('dropdown');
 
-searchInput.addEventListener('keydown', function(event) {
+searchInput.addEventListener('keydown', function (event) {
     const query = this.value.trim();
     // Validate: contains only letters and numbers and is exactly 55 characters long
     const isValid = /^[a-zA-Z0-9]{55}$/.test(query);
-    
+
     if (event.key === 'Enter') {
-        dropdown.innerHTML = ''; // 清空下拉列表
+        dropdown.innerHTML = ''; // clear dropdown
         console.log(isValid);
         if (isValid) {
             const supportedWebsites = [
@@ -76,45 +76,45 @@ searchInput.addEventListener('keydown', function(event) {
                 dropdown.appendChild(item);
             });
 
-            // 显示下拉列表
+            // show dropdown
             dropdown.classList.add('show');
         } else {
-            dropdown.classList.remove('show'); // 如果没有输入，隐藏下拉列表
+            dropdown.classList.remove('show'); // hide dropdown if input is invalid
         }
     }
 });
 
-// 监听失去焦点事件
-searchInput.addEventListener('blur', function() {
+// listen to blur event
+searchInput.addEventListener('blur', function () {
     setTimeout(() => {
-        dropdown.classList.remove('show'); // 失去焦点时隐藏下拉列表
-    }, 100); // 设置延迟，以便用户可以点击下拉项
+        dropdown.classList.remove('show'); // hide dropdown when losing focus
+    }, 100); // set delay, so user can click dropdown items
 });
 
-// 点击事件处理
-document.addEventListener('click', function(event) {
+// click event handler
+document.addEventListener('click', function (event) {
     if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
         dropdown.classList.remove('show');
     }
 });
 
-// 添加彩蛋功能
+// add easter egg
 let clickCount = 0;
 let lastClickTime = 0;
 const versionElement = document.querySelector('.version');
 
-versionElement.addEventListener('click', function(event) {
+versionElement.addEventListener('click', function (event) {
     const currentTime = new Date().getTime();
     if (currentTime - lastClickTime > 1000) {
-        // 如果两次点击间隔超过1秒，重置计数
+        // if two clicks are more than 1 second apart, reset count
         clickCount = 0;
     }
     clickCount++;
     lastClickTime = currentTime;
 
     if (clickCount === 6) {
-        // 连续点击6次，打开新窗口
+        // open a new window after 6 consecutive clicks
         window.open('https://minascan.io/mainnet/validator/B62qn7KLcjFRqNhnUngn2iky62Lq4E8G2t66KdFKTdeJUzwoEkPsSmJ/delegations', '_blank,noopener,noreferrer');
-        clickCount = 0; // 重置计数
+        clickCount = 0; // reset count
     }
 });

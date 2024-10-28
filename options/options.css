@@ -22,12 +22,13 @@ body {
 .header {
     margin-bottom: 20px;
 }
+
 .svgIcon {
     position: absolute;
     left: 10px;
 }
 
-.iconBox{
+.iconBox {
     display: flex;
     justify-content: center;
     position: relative;
@@ -48,12 +49,12 @@ body {
 
 .search {
     width: 76%;
-    border: none; /* 取消边框 */
-    margin: 0; /* 取消外边距 */
-    padding: 0; /* 取消内边距 */
-    outline: none; /* 取消聚焦时的轮廓 */
-    font-size: 16px; /* 设置字体大小 */
-    color: #333; /* 设置字体颜色 */
+    border: none;
+    margin: 0;
+    padding: 0;
+    outline: none;
+    font-size: 16px;
+    color: #333;
     font-size: 14px;
     color: #333;
     transition: border-color 0.3s;
@@ -162,13 +163,14 @@ body {
     align-items: center;
     z-index: 1000;
     font-size: 14px;
-    opacity: 0; /* 初始为透明 */
-    visibility: hidden; /* 初始为不可见 */
-    transition: opacity 0.5s ease, visibility 0.5s ease; /* 渐变效果 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
 }
+
 .overlay.show {
-    opacity: 1; /* 完全可见 */
-    visibility: visible; /* 可见 */
+    opacity: 1;
+    visibility: visible;
 }
 
 .overlay-content {
@@ -221,13 +223,14 @@ body {
     max-height: 300px;
     overflow-y: auto;
     z-index: 1000;
-    opacity: 0; /* 初始为透明 */
-    visibility: hidden; /* 初始为不可见 */
-    transition: opacity 0.5s ease, visibility 0.5s ease; /* 渐变效果 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
 }
+
 .dropdown.show {
-    opacity: 1; /* 完全可见 */
-    visibility: visible; /* 可见 */
+    opacity: 1;
+    visibility: visible;
 }
 
 #apiKeyInput {

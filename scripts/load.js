@@ -16,29 +16,67 @@ const CONFIG = {
 };
 
 // Main function
-window.onload = function () {
-    if (isSupportedSite(window.location.href)) {
-        const accountOverviewElement = document.querySelector('h5.card-title') || document.querySelector('.TabSwitcher_tabSwitcher__PGC63');
-        if (accountOverviewElement) {
-            setupAccountOverview(accountOverviewElement);
-        }
+function initialize() {
+    const currentUrl = window.location.href;
+    if (!isSupportedSite(currentUrl)) return;
+
+    // check if the button already exists
+    if (document.querySelector('.fund-flow-button')) {
+        return;
     }
-};
+
+    const selectors = ['h5.card-title', '.TabSwitcher_tabSwitcher__PGC63'];
+    const accountOverviewElement = selectors.reduce((element, selector) =>
+        element || document.querySelector(selector), null);
+
+    if (accountOverviewElement) {
+        setupAccountOverview(accountOverviewElement);
+    }
+}
+
+// dom ready and url change observer
+window.onload = initialize;
+
+let lastUrl = location.href;
+const urlObserver = new MutationObserver(() => {
+    const currentUrl = location.href;
+    if (currentUrl !== lastUrl && isSupportedSite(currentUrl)) {
+        lastUrl = currentUrl;
+        initialize();
+    }
+});
+
+urlObserver.observe(document, {
+    subtree: true,
+    childList: true
+});
 
 // Utility functions
 const isSupportedSite = (url) => CONFIG.SUPPORTED_SITES.some(site => site.regex.test(url));
 
 // get api key from storage
-function getApiKeyFromStorage() {
-    return new Promise((resolve, reject) => {
-        chrome.storage.sync.get(['apiKey'], function(result) {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-            } else {
-                resolve(result.apiKey || '');
-            }
+async function getApiKeyFromStorage() {
+    try {
+        // first check if the chrome runtime is available
+        if (!chrome.runtime || !chrome.runtime.id) {
+            console.warn('Chrome extension context invalid - please refresh the page');
+            return '';
+        }
+
+        return new Promise((resolve) => {
+            chrome.storage.sync.get(['apiKey'], function (result) {
+                if (chrome.runtime.lastError) {
+                    console.warn('Failed to get API key:', chrome.runtime.lastError);
+                    resolve('');
+                } else {
+                    resolve(result.apiKey || '');
+                }
+            });
         });
-    });
+    } catch (error) {
+        console.warn('Error getting API key:', error);
+        return '';
+    }
 }
 
 const getAccountId = (url) => {
@@ -91,7 +129,7 @@ async function handleButtonClick() {
     const loadingIndex = layer.load(2, {
         shade: [0.5, '#000'],
         content: 'loading...',
-        time: 5000,
+        time: 15000,
     });
 
     try {
@@ -116,10 +154,13 @@ async function fetchTransactionData(accountUrl) {
 
 // minascan
 async function fetchMinascanData(accountUrl) {
-    const apiUrl = CONFIG.MINASCAN_API + `/v1/accounts/${getAccountId(accountUrl)}`;
+    const accountId = getAccountId(accountUrl);
+    const accountInfoUrl = `${CONFIG.MINAEXPLORER_API}/accounts/${accountId}`;
+    const accountInfo = await fetchAccountInfo(accountInfoUrl);
+    const apiUrl = CONFIG.MINASCAN_API + `/v1/accounts/${accountId}`;
     const txNums = await fetchTxNumsV1(apiUrl);
     const fullData = await fetchAllTxV1(apiUrl, txNums);
-
+    return processMinascanTransactionData(fullData, accountId, accountInfo);
 }
 
 async function fetchTxNumsV1(apiUrl) {
@@ -131,14 +172,67 @@ async function fetchTxNumsV1(apiUrl) {
     });
     const data = await response.json();
     const totalTxs = data.totalElements;
-    console.log("xxxdata", totalTxs);
     return totalTxs;
 }
 
 async function fetchAllTxV1(apiUrl, txNums) {
-    const response = await fetch(`${apiUrl}/txs?page=0&size=${txNums}&orderBy=DESC&sortBy=AGE&direction=ALL`);
-    const data = await response.json();
-    return data;
+    const apiKey = await getApiKeyFromStorage();
+    const maxSize = 50;
+    const pages = Math.min(Math.ceil(txNums / maxSize), Math.ceil(CONFIG.MAX_TX_LIMIT / maxSize));
+
+    // create parallel requests
+    const requests = Array.from({ length: pages }, (_, page) =>
+        fetch(`${apiUrl}/txs?page=${page}&size=${maxSize}&orderBy=DESC&sortBy=AGE&direction=ALL`, {
+            headers: { 'X-API-KEY': apiKey }
+        }).then(response => {
+            if (response.status !== 200) {
+                throw new Error('Response error');
+            }
+            return response.json();
+        })
+    );
+
+    try {
+        // execute all requests in parallel
+        const results = await Promise.all(requests);
+        const allTransactions = results.flatMap(result => result.data);
+
+        // ensure not exceed the max tx limit
+        return allTransactions.slice(0, CONFIG.MAX_TX_LIMIT);
+    } catch (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+    }
+}
+
+function processMinascanTransactionData(data, accountId, accountInfo) {
+    const flowData = {
+        incoming: new Map(),
+        outgoing: new Map(),
+        centerNodeInfo: {
+            id: accountId,
+            userName: accountInfo.account.username || '',
+            isCoinbaseReceiver: accountInfo.account.totalBlocks > 0
+        }
+    };
+
+    data.forEach(tx => {
+        if (tx.type === 'payment' && tx.amount !== 0 && tx.senderAddress !== tx.receiverAddress) {
+            processMinascanTransaction(tx, accountId, flowData);
+        }
+    });
+
+    return flowData;
+}
+
+function processMinascanTransaction(tx, accountId, flowData) {
+    const { amount, senderAddress, receiverAddress, senderName, receiverName, memo } = tx;
+    const isOutgoing = senderAddress === accountId;
+    const targetMap = isOutgoing ? flowData.outgoing : flowData.incoming;
+    const targetAddress = isOutgoing ? receiverAddress : senderAddress;
+    const userName = isOutgoing ? receiverName : senderName;
+
+    updateFlowData(targetMap, targetAddress, amount, userName, memo);
 }
 
 // minaexplorer 
@@ -158,7 +252,6 @@ async function fetchAccountInfo(apiUrl) {
         throw new Error('network response not ok');
     }
     const data = await response.json();
-    console.log("accountInfo", data);
     return data;
 }
 
@@ -204,20 +297,20 @@ function processTransaction(tx, accountId, flowData) {
     const targetAddress = isOutgoing ? to : from;
     const userName = isOutgoing ? toUserName : fromUserName;
 
-    updateFlowData(targetMap, targetAddress, amount, userName, memo);
+    updateFlowData(targetMap, targetAddress, amount / 1e9, userName, memo);
 }
 
 function updateFlowData(map, address, amount, userName, memo) {
     if (map.has(address)) {
         const existing = map.get(address);
         map.set(address, {
-            amount: existing.amount + BigInt(amount),
+            amount: existing.amount + amount,
             userName: userName || "Unknown",
             memo: existing.memo || memo || ""
         });
     } else {
         map.set(address, {
-            amount: BigInt(amount),
+            amount: amount,
             userName: userName || "Unknown",
             memo: memo || ""
         });
@@ -264,7 +357,8 @@ function prepareChartData(flowData) {
         userName: centerNodeInfo.userName,
         isCoinbaseReceiver: centerNodeInfo.isCoinbaseReceiver
     }];
-    console.log("centerNodeInfo", nodes);
+
+
     const links = [];
     const addedNodes = new Set([centerNodeInfo.id]);
 
@@ -415,7 +509,9 @@ function createChart(container, data) {
         .attr("ry", 2)
         .style("cursor", "pointer")
         .on("click", function (event, d) {
-            window.open(`https://minaexplorer.com/wallet/${d.id}`, '_blank', 'noopener', 'noreferrer');
+            const currentHost = window.location.host;
+            const redirectUrl = currentHost.includes('minascan') ? `https://minascan.io/mainnet/account/${d.id}` : `https://minaexplorer.com/wallet/${d.id}`;
+            window.open(redirectUrl, '_blank', 'noopener', 'noreferrer');
         });
 
     node.append("text")
@@ -481,10 +577,7 @@ function createChart(container, data) {
             const y = d.type === "incoming" ? sourceNode.y : targetNode.y;
             return `translate(${x}, ${y})`;
         })
-        .text(d => {
-            const amountInMina = Number(d.value) / 1e9;
-            return `${amountInMina.toFixed(8)} MINA`;
-        });
+        .text(d => `${Number(d.value).toFixed(8)} MINA`);
 
     // Add an invisible path for each link for text positioning
     link.append("path")
