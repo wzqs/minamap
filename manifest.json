@@ -9,9 +9,7 @@
       "128": "img/logo-16.png"
     },
     "permissions": [
-      "storage",
-      "activeTab",
-      "webRequest"
+      "storage"
     ],
     "content_scripts": [
       {
