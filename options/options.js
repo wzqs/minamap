@@ -23,7 +23,7 @@ document.getElementById('closeOverlay2').addEventListener('click', function () {
 document.getElementById('configureApiKey').addEventListener('click', function () {
     let dom = document.getElementById('overlayApiKey');
     dom.classList.add('show');
-    // 从 chrome.storage 中获取已保存的 API Key
+    // fetch api key from chrome.storage
     chrome.storage.sync.get(['apiKey'], function (result) {
         if (result.apiKey) {
             document.getElementById('apiKeyInput').value = result.apiKey;

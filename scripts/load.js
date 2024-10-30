@@ -391,7 +391,7 @@ function processFlowDataMap(dataMap, nodes, links, addedNodes, accountId, group,
 
 function displayNoDataMessage(container) {
     const noDataMessage = document.createElement('p');
-    noDataMessage.textContent = 'No available transaction data';
+    noDataMessage.textContent = 'please check if the apikey is set and correct';
     container.appendChild(noDataMessage);
 }
 
