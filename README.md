@@ -73,7 +73,7 @@ While the extension works immediately with minaexplorer.com, using it with minas
 
 ### Basic Usage
 
-![MinaMap Demo](path/to/demo.gif)
+![MinaMap Demo](https://github.com/user-attachments/assets/65697b5c-06de-4fc5-b00f-4a461f2a56c0)
 *A quick demonstration showing how to generate and interact with fund flow visualizations using MinaMap*
 
 1. **Quick Address Search**
