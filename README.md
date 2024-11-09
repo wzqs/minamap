@@ -32,19 +32,77 @@ MinaMap is a browser extension that enhances the functionality of blockchain exp
    - Supports Minascan API (API key configuration)
 
 
-## Installation and Usage
+## Installation 
 
-1. Download the project code
+### Option 1: Install from Source Code
+1. Download the source code from https://github.com/wzqs/minamap/
 2. Open the extension management page in Chrome (chrome://extensions/)
 3. Enable "Developer mode"
 4. Click "Load unpacked" and select the project folder
-5. For Minascan API access:
-   - Register at https://api.blockberry.one
-   - Create your API key after login
-   - You can request unlimited API access by submitting feedback
-   - Configure the API key in the extension settings
-   - Save and Refresh the current page after API key configuration
-6. Visit supported blockchain explorer websites to use the new features
+
+### Option 2: Install from Chrome Web Store
+1. Visit the Chrome Web Store:
+   - Direct link: https://chromewebstore.google.com/detail/minamap/dfecmhopombamncacibeiidjcbbegnbo
+   - Or search for "MinaMap" in the Chrome Web Store
+2. Click "Add to Chrome" to complete installation
+
+The extension supports two blockchain explorers:
+- minaexplorer.com (works out of the box)
+- minascan.io (requires API key setup)
+
+### Setting up Minascan API Access
+While the extension works immediately with minaexplorer.com, using it with minascan.io requires API configuration:
+
+1. Create a Blockberry Account
+   - Navigate to https://api.blockberry.one
+   - Complete the registration process
+
+2. Obtain API Credentials
+   - Sign in to your Blockberry account
+   - Generate a new API key
+   - Note: For unlimited API access, contact Blockberry support
+
+3. Configure MinaMap
+   - Click the MinaMap extension icon
+   - Navigate to Settings
+   - Input your API key
+   - Save changes
+   - Refresh any open minascan.io tabs
+
+## User Guide
+
+### Basic Usage
+
+![MinaMap Demo](path/to/demo.gif)
+*A quick demonstration showing how to generate and interact with fund flow visualizations using MinaMap*
+
+1. **Quick Address Search**
+   - Click the MinaMap extension icon in your browser
+   - Enter the Mina address you want to analyze in the search box
+   - Press Enter to see available blockchain explorer options
+   - Choose your preferred explorer (minaexplorer.com or minascan.io)
+
+2. **Fund Flow Analysis**
+   - After the explorer page loads, locate the blue "Fund Flow" button
+   - Click the button to generate the visualization
+   - Wait for the chart to render (processing time depends on transaction volume)
+
+3. **Interactive Features**
+   - Click on any address node to navigate to its explorer page
+   - Use mouse wheel to zoom in/out
+
+### Tips
+- The visualization supports up to 2500 transactions
+- Different colors indicate transaction directions:
+  - Green: Incoming transactions
+  - Red: Outgoing transactions
+  - Black: Addresses with both incoming and outgoing transactions (self-interactions)
+- For optimal performance, ensure your API key is properly configured when using minascan.io
+- The Fund Flow feature works seamlessly regardless of how you access an address:
+  - Through the MinaMap extension
+  - Direct URL input
+  - Search function on blockchain explorers
+
 
 ## Supported Websites
 
