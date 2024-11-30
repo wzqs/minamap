@@ -9,17 +9,6 @@ document.getElementById('closeOverlay').addEventListener('click', function () {
     dom.classList.remove('show');
 });
 
-document.getElementById('customizeFeatures').addEventListener('click', function () {
-    // document.getElementById('overlay').style.display = 'flex';
-    let dom = document.getElementById('overlay2');
-    dom.classList.add('show');
-});
-
-document.getElementById('closeOverlay2').addEventListener('click', function () {
-    let dom = document.getElementById('overlay2');
-    dom.classList.remove('show');
-});
-
 document.getElementById('configureApiKey').addEventListener('click', function () {
     let dom = document.getElementById('overlayApiKey');
     dom.classList.add('show');
