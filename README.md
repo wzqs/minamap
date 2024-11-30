@@ -126,6 +126,7 @@ For any questions or suggestions, please contact us through GitHub Issues.
 
 ## Future Plans
 
+0. **Wallet Address Labels**: Manage custom address labels with local browser storage for easy identification of wallet addresses.
 1. **Phishing Address Warning**: Add suspicious address warning functionality
 2. **Phishing Website Warning**: Add suspicious website warning functionality
 3. **Enhanced Data Analysis**: Add more data analysis dimensions
