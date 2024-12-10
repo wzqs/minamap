@@ -26,6 +26,10 @@
                 <span>BlockBerry API key</span>
                 <svg t="1724945349953" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2626" width="16" height="16"><path d="M357.376 852.31a25.6 25.6 0 0 0 36.181 36.18l358.4-358.4a25.6 25.6 0 0 0 0-36.18l-358.4-358.4a25.6 25.6 0 0 0-36.181 36.18L697.686 512l-340.31 340.31z" p-id="2627" fill="#8a8a8a"></path></svg>
             </div>
+            <div class="menu-item" id="addressLabelManager">
+                <span>Manage Address Labels</span>
+                <svg t="1724945349953" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2626" width="16" height="16"><path d="M357.376 852.31a25.6 25.6 0 0 0 36.181 36.18l358.4-358.4a25.6 25.6 0 0 0 0-36.18l-358.4-358.4a25.6 25.6 0 0 0-36.181 36.18L697.686 512l-340.31 340.31z" p-id="2627" fill="#8a8a8a"></path></svg>
+            </div>
         </div>
         <div class="footer">
             <div class="footer-links">
@@ -55,6 +59,19 @@
             <h4>BlockBerry API key</h4>
             <input type="text" id="apiKeyInput" placeholder="please enter your API key">
             <button id="saveApiKey">Save</button>
+        </div>
+    </div>
+    <!-- Overlay for Address Label Management -->
+    <div id="overlayAddressLabel" class="overlay">
+        <div class="overlay-content">
+            <span class="close-btn" id="closeOverlayAddressLabel">&times;</span>
+            <h4>Manage Address Labels</h4>
+            <input type="text" id="addressInput" placeholder="Enter wallet address">
+            <input type="text" id="labelInput" placeholder="Enter label">
+            <button id="saveLabel">Save</button>
+            <div class="label-list-container">
+                <ul id="labelList" class="label-list"></ul>
+            </div>
         </div>
     </div>
 

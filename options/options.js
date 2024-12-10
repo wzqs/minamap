@@ -107,3 +107,92 @@ versionElement.addEventListener('click', function (event) {
         clickCount = 0; // reset count
     }
 });
+
+document.getElementById('addressLabelManager').addEventListener('click', function () {
+    let dom = document.getElementById('overlayAddressLabel');
+    dom.classList.add('show');
+    initializeLabelManager();
+});
+
+document.getElementById('closeOverlayAddressLabel').addEventListener('click', function () {
+    let dom = document.getElementById('overlayAddressLabel');
+    dom.classList.remove('show');
+});
+
+document.getElementById('saveLabel').addEventListener('click', function() {
+    const address = document.getElementById('addressInput').value;
+    const label = document.getElementById('labelInput').value;
+    
+    if (address && label) {
+        saveAddressLabel(address, label);
+        initializeLabelManager();
+        
+        document.getElementById('addressInput').value = '';
+        document.getElementById('labelInput').value = '';
+    }
+});
+
+function saveAddressLabel(address, label) {
+    const labels = JSON.parse(localStorage.getItem('addressLabels')) || {};
+    labels[address] = label;
+    localStorage.setItem('addressLabels', JSON.stringify(labels));
+}
+
+function initializeLabelManager() {
+    const labels = JSON.parse(localStorage.getItem('addressLabels')) || {};
+    const labelList = document.getElementById('labelList');
+    labelList.innerHTML = '';
+    
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'toggle-btn';
+    toggleBtn.textContent = 'Show History Labels';
+    
+    const labelsContainer = document.createElement('div');
+    labelsContainer.className = 'labels-container hidden';
+    
+    Object.entries(labels).forEach(([address, label]) => {
+        const li = document.createElement('li');
+        
+        const labelInfo = document.createElement('div');
+        labelInfo.className = 'label-info';
+        
+        const labelName = document.createElement('div');
+        labelName.className = 'label-name';
+        labelName.textContent = label;
+        
+        const labelAddress = document.createElement('div');
+        labelAddress.className = 'label-address';
+        labelAddress.textContent = address;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'delete';
+        deleteBtn.onclick = () => deleteLabel(address);
+        
+        labelInfo.appendChild(labelName);
+        labelInfo.appendChild(labelAddress);
+        li.appendChild(labelInfo);
+        li.appendChild(deleteBtn);
+        labelsContainer.appendChild(li);
+    });
+    
+    toggleBtn.onclick = function() {
+        if (labelsContainer.classList.contains('hidden')) {
+            labelsContainer.classList.remove('hidden');
+            toggleBtn.textContent = 'Hide History Labels';
+        } else {
+            labelsContainer.classList.add('hidden');
+            toggleBtn.textContent = 'Show History Labels';
+        }
+    };
+    
+    labelList.appendChild(toggleBtn);
+    labelList.appendChild(labelsContainer);
+}
+
+function deleteLabel(address) {
+    const labels = JSON.parse(localStorage.getItem('addressLabels')) || {};
+    delete labels[address];
+    localStorage.setItem('addressLabels', JSON.stringify(labels));
+    initializeLabelManager();
+}
