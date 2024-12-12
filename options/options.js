@@ -141,15 +141,16 @@ function saveAddressLabel(address, label) {
 function initializeLabelManager() {
     const labels = JSON.parse(localStorage.getItem('addressLabels')) || {};
     const labelList = document.getElementById('labelList');
+    const wasExpanded = labelList.querySelector('.labels-container')?.classList.contains('hidden') === false;
     labelList.innerHTML = '';
     
     const labelsContainer = document.createElement('div');
-    labelsContainer.className = 'labels-container hidden';
+    labelsContainer.className = 'labels-container' + (wasExpanded ? '' : ' hidden');
     
     const toggleLink = document.createElement('a');
     toggleLink.href = '#';
     toggleLink.className = 'toggle-link';
-    toggleLink.textContent = 'Show History Labels';
+    toggleLink.textContent = wasExpanded ? 'Hide History Labels' : 'Show History Labels';
     toggleLink.onclick = function(e) {
         e.preventDefault();
         if (labelsContainer.classList.contains('hidden')) {
