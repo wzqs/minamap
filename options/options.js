@@ -146,6 +146,23 @@ function initializeLabelManager() {
     const labelsContainer = document.createElement('div');
     labelsContainer.className = 'labels-container hidden';
     
+    const toggleLink = document.createElement('a');
+    toggleLink.href = '#';
+    toggleLink.className = 'toggle-link';
+    toggleLink.textContent = 'Show History Labels';
+    toggleLink.onclick = function(e) {
+        e.preventDefault();
+        if (labelsContainer.classList.contains('hidden')) {
+            labelsContainer.classList.remove('hidden');
+            this.textContent = 'Hide History Labels';
+        } else {
+            labelsContainer.classList.add('hidden');
+            this.textContent = 'Show History Labels';
+        }
+    };
+    
+    labelList.appendChild(toggleLink);
+    
     Object.entries(labels).forEach(([address, label]) => {
         const li = document.createElement('li');
         
@@ -173,16 +190,6 @@ function initializeLabelManager() {
     });
     
     labelList.appendChild(labelsContainer);
-    
-    document.getElementById('toggleHistoryBtn').onclick = function() {
-        if (labelsContainer.classList.contains('hidden')) {
-            labelsContainer.classList.remove('hidden');
-            this.textContent = 'Hide History Labels';
-        } else {
-            labelsContainer.classList.add('hidden');
-            this.textContent = 'Show History Labels';
-        }
-    };
 }
 
 function deleteLabel(address) {
