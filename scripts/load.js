@@ -57,14 +57,13 @@ const isSupportedSite = (url) => CONFIG.SUPPORTED_SITES.some(site => site.regex.
 // get api key from storage
 async function getApiKeyFromStorage() {
     try {
-        // first check if the chrome runtime is available
         if (!chrome.runtime || !chrome.runtime.id) {
             console.warn('Chrome extension context invalid - please refresh the page');
             return '';
         }
 
         return new Promise((resolve) => {
-            chrome.storage.sync.get(['apiKey'], function (result) {
+            chrome.storage.local.get(['apiKey'], function (result) {
                 if (chrome.runtime.lastError) {
                     console.warn('Failed to get API key:', chrome.runtime.lastError);
                     resolve('');
@@ -141,6 +140,15 @@ async function handleButtonClick() {
     }
 }
 
+async function getAddressLabel(address) {
+    return new Promise((resolve) => {
+        chrome.storage.sync.get(['addressLabels'], function(result) {
+            const labels = result.addressLabels || {};
+            resolve(labels[address] || null);
+        });
+    });
+}
+
 // Data fetching and processing
 async function fetchTransactionData(accountUrl) {
     if (accountUrl.startsWith('https://minaexplorer.com/wallet/')) {
@@ -205,7 +213,7 @@ async function fetchAllTxV1(apiUrl, txNums) {
     }
 }
 
-function processMinascanTransactionData(data, accountId, accountInfo) {
+async function processMinascanTransactionData(data, accountId, accountInfo) {
     const flowData = {
         incoming: new Map(),
         outgoing: new Map(),
@@ -216,21 +224,25 @@ function processMinascanTransactionData(data, accountId, accountInfo) {
         }
     };
 
-    data.forEach(tx => {
+    // Process all transactions using Promise.all
+    await Promise.all(data.map(async tx => {
         if (tx.type === 'payment' && tx.amount !== 0 && tx.senderAddress !== tx.receiverAddress) {
-            processMinascanTransaction(tx, accountId, flowData);
+            await processMinascanTransaction(tx, accountId, flowData);
         }
-    });
+    }));
 
     return flowData;
 }
 
-function processMinascanTransaction(tx, accountId, flowData) {
+async function processMinascanTransaction(tx, accountId, flowData) {
     const { amount, senderAddress, receiverAddress, senderName, receiverName, memo } = tx;
     const isOutgoing = senderAddress === accountId;
     const targetMap = isOutgoing ? flowData.outgoing : flowData.incoming;
     const targetAddress = isOutgoing ? receiverAddress : senderAddress;
-    const userName = isOutgoing ? receiverName : senderName;
+    
+    // Prioritize locally saved label
+    const savedLabel = await getAddressLabel(targetAddress);
+    const userName = savedLabel || (isOutgoing ? receiverName : senderName) || "Unknown";
 
     updateFlowData(targetMap, targetAddress, amount, userName, memo);
 }
@@ -271,31 +283,37 @@ async function fetchAllTx(apiUrl, txNums) {
     return response.json();
 }
 
-function processTransactionData(data, accountInfo) {
+async function processTransactionData(data, accountInfo) {
     const accountId = getAccountId(window.location.href);
     const flowData = {
-        incoming: new Map(), outgoing: new Map(), centerNodeInfo: {
+        incoming: new Map(), 
+        outgoing: new Map(), 
+        centerNodeInfo: {
             id: accountId,
             userName: accountInfo.account.username || '',
             isCoinbaseReceiver: accountInfo.account.totalBlocks > 0
         }
     };
 
-    data.data.forEach(tx => {
+    // Process all transactions using Promise.all
+    await Promise.all(data.data.map(async tx => {
         if (tx.kind === 'PAYMENT' && tx.amount !== 0 && tx.from !== tx.to) {
-            processTransaction(tx, accountId, flowData);
+            await processTransaction(tx, accountId, flowData);
         }
-    });
+    }));
 
     return flowData;
 }
 
-function processTransaction(tx, accountId, flowData) {
+async function processTransaction(tx, accountId, flowData) {
     const { amount, from, to, fromUserName, toUserName, memo } = tx;
     const isOutgoing = from === accountId;
     const targetMap = isOutgoing ? flowData.outgoing : flowData.incoming;
     const targetAddress = isOutgoing ? to : from;
-    const userName = isOutgoing ? toUserName : fromUserName;
+    
+    // Prioritize locally saved label
+    const savedLabel = await getAddressLabel(targetAddress);
+    const userName = savedLabel || (isOutgoing ? toUserName : fromUserName) || "Unknown";
 
     updateFlowData(targetMap, targetAddress, amount / 1e9, userName, memo);
 }

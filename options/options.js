@@ -29,7 +29,6 @@ document.getElementById('saveApiKey').addEventListener('click', function () {
     let apiKey = document.getElementById('apiKeyInput').value;
     // save api key to chrome.storage
     chrome.storage.sync.set({ apiKey: apiKey }, function () {
-        console.log('API Key is saved');
         // close overlay
         document.getElementById('overlayApiKey').classList.remove('show');
     });
@@ -46,7 +45,6 @@ searchInput.addEventListener('keydown', function (event) {
 
     if (event.key === 'Enter') {
         dropdown.innerHTML = ''; // clear dropdown
-        console.log(isValid);
         if (isValid) {
             const supportedWebsites = [
                 { name: 'minaexplorer.com', url: `https://minaexplorer.com/wallet/${query}` },
@@ -133,69 +131,81 @@ document.getElementById('saveLabel').addEventListener('click', function() {
 });
 
 function saveAddressLabel(address, label) {
-    const labels = JSON.parse(localStorage.getItem('addressLabels')) || {};
-    labels[address] = label;
-    localStorage.setItem('addressLabels', JSON.stringify(labels));
+    chrome.storage.sync.get(['addressLabels'], function(result) {
+        const labels = result.addressLabels || {};
+        labels[address] = label;
+        chrome.storage.sync.set({ addressLabels: labels }, function() {
+            if (chrome.runtime.lastError) {
+            } else {
+                initializeLabelManager();
+            }
+        });
+    });
 }
 
 function initializeLabelManager() {
-    const labels = JSON.parse(localStorage.getItem('addressLabels')) || {};
-    const labelList = document.getElementById('labelList');
-    const wasExpanded = labelList.querySelector('.labels-container')?.classList.contains('hidden') === false;
-    labelList.innerHTML = '';
-    
-    const labelsContainer = document.createElement('div');
-    labelsContainer.className = 'labels-container' + (wasExpanded ? '' : ' hidden');
-    
-    const toggleLink = document.createElement('a');
-    toggleLink.href = '#';
-    toggleLink.className = 'toggle-link';
-    toggleLink.textContent = wasExpanded ? 'Hide History Labels' : 'Show History Labels';
-    toggleLink.onclick = function(e) {
-        e.preventDefault();
-        if (labelsContainer.classList.contains('hidden')) {
-            labelsContainer.classList.remove('hidden');
-            this.textContent = 'Hide History Labels';
-        } else {
-            labelsContainer.classList.add('hidden');
-            this.textContent = 'Show History Labels';
-        }
-    };
-    
-    labelList.appendChild(toggleLink);
-    
-    Object.entries(labels).forEach(([address, label]) => {
-        const li = document.createElement('li');
+    chrome.storage.sync.get(['addressLabels'], function(result) {
+        const labels = result.addressLabels || {};
+        const labelList = document.getElementById('labelList');
+        const wasExpanded = labelList.querySelector('.labels-container')?.classList.contains('hidden') === false;
+        labelList.innerHTML = '';
         
-        const labelInfo = document.createElement('div');
-        labelInfo.className = 'label-info';
+        const labelsContainer = document.createElement('div');
+        labelsContainer.className = 'labels-container' + (wasExpanded ? '' : ' hidden');
         
-        const labelName = document.createElement('div');
-        labelName.className = 'label-name';
-        labelName.textContent = label;
+        const toggleLink = document.createElement('a');
+        toggleLink.href = '#';
+        toggleLink.className = 'toggle-link';
+        toggleLink.textContent = wasExpanded ? 'Hide History Labels' : 'Show History Labels';
+        toggleLink.onclick = function(e) {
+            e.preventDefault();
+            if (labelsContainer.classList.contains('hidden')) {
+                labelsContainer.classList.remove('hidden');
+                this.textContent = 'Hide History Labels';
+            } else {
+                labelsContainer.classList.add('hidden');
+                this.textContent = 'Show History Labels';
+            }
+        };
         
-        const labelAddress = document.createElement('div');
-        labelAddress.className = 'label-address';
-        labelAddress.textContent = address;
+        labelList.appendChild(toggleLink);
         
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = 'delete';
-        deleteBtn.onclick = () => deleteLabel(address);
+        Object.entries(labels).forEach(([address, label]) => {
+            const li = document.createElement('li');
+            
+            const labelInfo = document.createElement('div');
+            labelInfo.className = 'label-info';
+            
+            const labelName = document.createElement('div');
+            labelName.className = 'label-name';
+            labelName.textContent = label;
+            
+            const labelAddress = document.createElement('div');
+            labelAddress.className = 'label-address';
+            labelAddress.textContent = address;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = 'delete';
+            deleteBtn.onclick = () => deleteLabel(address);
+            
+            labelInfo.appendChild(labelName);
+            labelInfo.appendChild(labelAddress);
+            li.appendChild(labelInfo);
+            li.appendChild(deleteBtn);
+            labelsContainer.appendChild(li);
+        });
         
-        labelInfo.appendChild(labelName);
-        labelInfo.appendChild(labelAddress);
-        li.appendChild(labelInfo);
-        li.appendChild(deleteBtn);
-        labelsContainer.appendChild(li);
+        labelList.appendChild(labelsContainer);
     });
-    
-    labelList.appendChild(labelsContainer);
 }
 
 function deleteLabel(address) {
-    const labels = JSON.parse(localStorage.getItem('addressLabels')) || {};
-    delete labels[address];
-    localStorage.setItem('addressLabels', JSON.stringify(labels));
-    initializeLabelManager();
+    chrome.storage.sync.get(['addressLabels'], function(result) {
+        const labels = result.addressLabels || {};
+        delete labels[address];
+        chrome.storage.sync.set({ addressLabels: labels }, function() {
+            initializeLabelManager();
+        });
+    });
 }
