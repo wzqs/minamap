@@ -131,10 +131,10 @@ document.getElementById('saveLabel').addEventListener('click', function() {
 });
 
 function saveAddressLabel(address, label) {
-    chrome.storage.sync.get(['addressLabels'], function(result) {
+    chrome.storage.local.get(['addressLabels'], function(result) {
         const labels = result.addressLabels || {};
         labels[address] = label;
-        chrome.storage.sync.set({ addressLabels: labels }, function() {
+        chrome.storage.local.set({ addressLabels: labels }, function() {
             if (chrome.runtime.lastError) {
             } else {
                 initializeLabelManager();
@@ -144,7 +144,7 @@ function saveAddressLabel(address, label) {
 }
 
 function initializeLabelManager() {
-    chrome.storage.sync.get(['addressLabels'], function(result) {
+    chrome.storage.local.get(['addressLabels'], function(result) {
         const labels = result.addressLabels || {};
         const labelList = document.getElementById('labelList');
         const wasExpanded = labelList.querySelector('.labels-container')?.classList.contains('hidden') === false;
@@ -201,10 +201,10 @@ function initializeLabelManager() {
 }
 
 function deleteLabel(address) {
-    chrome.storage.sync.get(['addressLabels'], function(result) {
+    chrome.storage.local.get(['addressLabels'], function(result) {
         const labels = result.addressLabels || {};
         delete labels[address];
-        chrome.storage.sync.set({ addressLabels: labels }, function() {
+        chrome.storage.local.set({ addressLabels: labels }, function() {
             initializeLabelManager();
         });
     });

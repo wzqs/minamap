@@ -57,13 +57,14 @@ const isSupportedSite = (url) => CONFIG.SUPPORTED_SITES.some(site => site.regex.
 // get api key from storage
 async function getApiKeyFromStorage() {
     try {
+        // first check if the chrome runtime is available
         if (!chrome.runtime || !chrome.runtime.id) {
             console.warn('Chrome extension context invalid - please refresh the page');
             return '';
         }
 
         return new Promise((resolve) => {
-            chrome.storage.local.get(['apiKey'], function (result) {
+            chrome.storage.sync.get(['apiKey'], function (result) {
                 if (chrome.runtime.lastError) {
                     console.warn('Failed to get API key:', chrome.runtime.lastError);
                     resolve('');
@@ -142,7 +143,7 @@ async function handleButtonClick() {
 
 async function getAddressLabel(address) {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['addressLabels'], function(result) {
+        chrome.storage.local.get(['addressLabels'], function(result) {
             const labels = result.addressLabels || {};
             resolve(labels[address] || null);
         });
