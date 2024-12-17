@@ -19,8 +19,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
+        tag_name: v1.${{ github.run_number }}
+        release_name: Release v1.${{ github.run_number }}
         draft: false
         prerelease: false
         
@@ -33,3 +33,8 @@ jobs:
         asset_path: ./MinaMap.zip
         asset_name: MinaMap.zip
         asset_content_type: application/zip
+        
+    - name: Update manifest version
+      run: |
+        VERSION="1.${{ github.run_number }}"
+        sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" manifest.json
