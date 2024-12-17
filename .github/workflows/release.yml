@@ -33,9 +33,4 @@ jobs:
         asset_path: ./MinaMap.zip
         asset_name: MinaMap.zip
         asset_content_type: application/zip
-        
-    - name: Update manifest version
-      run: |
-        VERSION="1.${{ github.run_number }}"
-        sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" manifest.json
-        sed -i "s/MinaMap v1\.${{ github.run_number }}/MinaMap v$VERSION/" options/options.html
+    
