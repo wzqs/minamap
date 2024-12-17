@@ -120,8 +120,11 @@ document.getElementById('closeOverlayAddressLabel').addEventListener('click', fu
 document.getElementById('saveLabel').addEventListener('click', function() {
     const address = document.getElementById('addressInput').value;
     const label = document.getElementById('labelInput').value;
+
+    // validate address
+    const isValidAddress = /^[a-zA-Z0-9]{55}$/.test(address);
     
-    if (address && label) {
+    if (address && label && isValidAddress) {
         saveAddressLabel(address, label);
         initializeLabelManager();
         
