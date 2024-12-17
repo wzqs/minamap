@@ -38,3 +38,4 @@ jobs:
       run: |
         VERSION="1.${{ github.run_number }}"
         sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" manifest.json
+        sed -i "s/MinaMap v1\.${{ github.run_number }}/MinaMap v$VERSION/" options/options.html
